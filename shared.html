@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sam + Zain — Shared Ops</title>
+<style>
+:root{
+  --bg:#0d0d0f;--surface:#16161a;--surface2:#1e1e24;--surface3:#26262e;
+  --border:#2e2e38;--text:#e8e8f0;--text2:#9898b0;--text3:#5a5a70;
+  --blue:#3b82f6;--orange:#f97316;--purple:#a78bfa;--green:#22c55e;
+  --red:#ef4444;--yellow:#eab308;--teal:#14b8a6;--pink:#ec4899;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;padding-bottom:80px;}
+
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.header-left h1{font-size:17px;font-weight:800;letter-spacing:-0.3px;}
+.header-left h1 span{color:var(--orange);}
+.header-left p{color:var(--text3);font-size:11px;margin-top:2px;}
+.nav-links{display:flex;gap:8px;align-items:center;}
+.nav-link{font-size:11px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer;color:var(--text3);background:var(--surface2);border:1px solid var(--border);text-decoration:none;transition:all .15s;}
+.nav-link:hover{color:var(--text);border-color:var(--surface3);}
+.nav-link.who{background:transparent;padding:4px 8px;}
+
+.wrap{padding:20px 24px;max-width:1500px;margin:0 auto;}
+.section{margin-bottom:28px;}
+.section-title{font-size:11px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.section-title .accent{width:8px;height:8px;border-radius:2px;}
+.section-title .right{margin-left:auto;font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.2px;text-transform:none;}
+
+/* TOP STATUS BAR */
+.status-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:24px;}
+.status-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;}
+.status-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--border);}
+.status-card.views::before{background:var(--blue);}
+.status-card.posts::before{background:var(--orange);}
+.status-card.kpi::before{background:var(--green);}
+.status-card.editors::before{background:var(--purple);}
+.status-card.kpi.off::before{background:var(--red);}
+.status-label{font-size:10px;font-weight:800;letter-spacing:.6px;color:var(--text3);text-transform:uppercase;}
+.status-value{font-size:30px;font-weight:800;margin-top:6px;letter-spacing:-0.8px;font-variant-numeric:tabular-nums;line-height:1;}
+.status-delta{font-size:11px;font-weight:700;margin-top:8px;display:flex;align-items:center;gap:4px;}
+.status-delta.up{color:var(--green);}
+.status-delta.down{color:var(--red);}
+.status-delta.flat{color:var(--text3);}
+.status-badge{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.4px;padding:3px 8px;border-radius:5px;margin-top:8px;}
+.status-badge.on{background:rgba(34,197,94,.18);color:var(--green);}
+.status-badge.off{background:rgba(239,68,68,.18);color:var(--red);}
+.status-card.views .status-value{color:var(--blue);}
+.status-card.posts .status-value{color:var(--orange);}
+.status-card.kpi .status-value{color:var(--green);}
+.status-card.kpi.off .status-value{color:var(--red);}
+.status-card.editors .status-value{color:var(--purple);}
+
+/* TABS */
+.tab-nav{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:22px;flex-wrap:wrap;}
+.tab-btn{background:transparent;border:none;color:var(--text3);font-size:12px;font-weight:700;padding:11px 18px;cursor:pointer;border-bottom:2px solid transparent;letter-spacing:.3px;transition:all .15s;font-family:inherit;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--orange);}
+.tab-badge{display:inline-block;background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:1px 7px;border-radius:9px;margin-left:6px;line-height:1.4;vertical-align:middle;}
+.tab-btn.active .tab-badge{background:var(--orange);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* TODAY'S ASSIGNMENTS — grouped by day */
+.day-group{display:flex;flex-direction:column;gap:14px;}
+.day-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.day-box.today{border-left:3px solid var(--red);}
+.day-box.tomorrow{border-left:3px solid var(--yellow);}
+.day-box.dayafter{border-left:3px solid var(--blue);}
+.day-box.later{border-left:3px solid var(--text3);}
+.day-box-h{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.day-box-h .lbl{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--text);}
+.day-box.today .day-box-h .lbl{color:var(--red);}
+.day-box.tomorrow .day-box-h .lbl{color:var(--yellow);}
+.day-box.dayafter .day-box-h .lbl{color:var(--blue);}
+.day-box-h .date{font-size:11px;color:var(--text3);font-weight:600;}
+.day-box-h .count{margin-left:auto;font-size:10px;font-weight:700;background:var(--surface3);color:var(--text2);padding:3px 9px;border-radius:9px;letter-spacing:.3px;}
+.day-box-body{padding:8px 14px;}
+.day-box-empty{padding:14px;text-align:center;font-size:12px;color:var(--text3);font-style:italic;}
+
+.assignments{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.assign-row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--surface2);}
+.assign-row:last-child{border-bottom:none;}
+.assign-row.done .assign-text{color:var(--text3);text-decoration:line-through;}
+.assign-cb{width:20px;height:20px;border:2px solid var(--border);border-radius:5px;background:var(--surface2);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:transparent;font-size:13px;font-weight:800;margin-top:2px;}
+.assign-cb.done{background:var(--green);border-color:var(--green);color:#fff;}
+.assign-body{flex:1;min-width:0;}
+.assign-text{font-size:13px;color:var(--text);font-weight:600;line-height:1.4;width:100%;background:transparent;border:none;outline:none;padding:0;font-family:inherit;resize:none;}
+.assign-text:focus{outline:1px dashed var(--text3);outline-offset:2px;border-radius:3px;padding:2px 4px;}
+.assign-owner{font-size:9px;font-weight:800;letter-spacing:.4px;padding:2px 7px;border-radius:4px;text-transform:uppercase;cursor:pointer;flex-shrink:0;}
+.assign-owner.sam{background:rgba(59,130,246,.15);color:var(--blue);}
+.assign-owner.zain{background:rgba(249,115,22,.15);color:var(--orange);}
+.assign-owner.both{background:rgba(167,139,250,.15);color:var(--purple);}
+.assign-del{font-size:14px;color:var(--text3);cursor:pointer;padding:0 4px;flex-shrink:0;}
+.assign-del:hover{color:var(--red);}
+.assign-add{margin-top:10px;display:flex;gap:8px;}
+.assign-add input{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:12px;font-family:inherit;}
+.assign-add input:focus{border-color:var(--orange);outline:none;}
+.assign-add button{background:var(--orange);color:#fff;font-weight:700;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px;}
+.assign-add select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:11px;font-weight:700;}
+.assign-hint{font-size:10px;color:var(--text3);margin-top:6px;font-family:'SF Mono',Monaco,monospace;}
+.assign-hint b{color:var(--text2);font-family:inherit;}
+
+.assign-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.assign-badge{font-size:9px;font-weight:800;letter-spacing:.3px;padding:2px 6px;border-radius:4px;text-transform:uppercase;line-height:1.5;cursor:pointer;}
+.assign-badge.prio-high{background:rgba(239,68,68,.18);color:var(--red);}
+.assign-badge.prio-med{background:rgba(234,179,8,.18);color:var(--yellow);}
+.assign-badge.prio-low{background:rgba(120,120,120,.15);color:var(--text3);}
+.assign-badge.tag-main{background:rgba(249,115,22,.15);color:var(--orange);}
+.assign-badge.tag-articulate{background:rgba(167,139,250,.15);color:var(--purple);}
+.assign-badge.tag-editing{background:rgba(239,68,68,.12);color:#fca5a5;}
+.assign-badge.tag-filming{background:rgba(236,72,153,.15);color:var(--pink);}
+.assign-badge.tag-agency{background:rgba(20,184,166,.15);color:var(--teal);}
+.assign-badge.tag-other{background:var(--surface3);color:var(--text2);}
+.assign-badge.due-overdue{background:rgba(239,68,68,.22);color:#fff;}
+.assign-badge.due-today{background:rgba(234,179,8,.22);color:var(--yellow);}
+.assign-badge.due-future{background:var(--surface3);color:var(--text2);}
+.assign-badge.status-waiting{background:rgba(234,179,8,.15);color:var(--yellow);}
+.assign-badge.status-blocked{background:rgba(239,68,68,.18);color:var(--red);}
+.assign-badge.rolled{background:rgba(167,139,250,.12);color:var(--purple);}
+.assign-row.has-prio-high{border-left:3px solid var(--red);padding-left:7px;margin-left:-10px;}
+.assign-filter{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.assign-chip{font-size:10px;font-weight:800;padding:5px 11px;border-radius:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text3);cursor:pointer;letter-spacing:.3px;text-transform:uppercase;transition:all .12s;}
+.assign-chip:hover{color:var(--text);border-color:var(--surface3);}
+.assign-chip.active{background:var(--orange);color:#fff;border-color:var(--orange);}
+
+/* POST OUTPUT TRACKER */
+.post-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:900px){.post-grid{grid-template-columns:1fr;}}
+.post-panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.post-panel-h{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.post-panel-h h3{font-size:13px;font-weight:800;color:var(--text);}
+.post-panel-h .dot{width:8px;height:8px;border-radius:50%;}
+.post-rows{display:flex;flex-direction:column;gap:6px;}
+.post-row{display:grid;grid-template-columns:1fr 60px 90px;gap:10px;align-items:center;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;}
+.post-row.done{border-color:var(--green);background:rgba(34,197,94,.06);}
+.post-row.done .post-row-n{color:var(--green);}
+.post-row-name{font-size:12px;font-weight:700;color:var(--text);}
+.post-row-note{font-size:10px;color:var(--yellow);margin-top:3px;line-height:1.35;font-style:italic;}
+.post-row > div:first-child{min-width:0;}
+.post-row-count{font-size:15px;font-weight:800;color:var(--text);text-align:right;font-variant-numeric:tabular-nums;}
+.post-row-btns{display:flex;gap:5px;justify-content:flex-end;}
+.post-row-btns button{background:var(--surface3);border:1px solid var(--border);color:var(--text2);font-weight:700;width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:14px;padding:0;transition:all .15s;}
+.post-row-btns button:hover{color:var(--text);border-color:var(--orange);background:var(--surface);}
+.post-row-btns button:active{transform:scale(0.92);}
+.post-reset{margin-top:10px;text-align:right;}
+.post-reset button{background:var(--surface2);border:1px solid var(--border);color:var(--text3);font-size:10px;font-weight:700;padding:5px 10px;border-radius:5px;cursor:pointer;}
+
+/* KPI STRIP (read-only, top of page) */
+.kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:20px;}
+@media(max-width:900px){.kpi-strip{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:500px){.kpi-strip{grid-template-columns:repeat(2,1fr);}}
+.kpi-tile{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px;}
+.kpi-tile.auto{border-left:3px solid var(--blue);}
+.kpi-tile-label{font-size:9px;font-weight:800;letter-spacing:.4px;color:var(--text3);text-transform:uppercase;line-height:1.25;min-height:22px;}
+.kpi-tile-vals{display:flex;align-items:baseline;gap:5px;margin-top:5px;}
+.kpi-tile-now{font-size:17px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;}
+.kpi-tile-sep{color:var(--text3);font-size:11px;}
+.kpi-tile-tgt{font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums;}
+.kpi-tile-bar{height:4px;background:var(--surface3);border-radius:2px;margin-top:6px;overflow:hidden;}
+.kpi-tile-bar-fill{height:100%;background:var(--green);border-radius:2px;transition:width .3s;}
+.kpi-tile-bar-fill.lag{background:var(--yellow);}
+.kpi-tile-bar-fill.critical{background:var(--red);}
+.kpi-strip-h{grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:10px;font-weight:800;letter-spacing:.5px;color:var(--text3);text-transform:uppercase;margin-bottom:2px;}
+.kpi-strip-h .right{margin-left:auto;font-size:10px;text-transform:none;letter-spacing:0;font-weight:600;}
+.kpi-strip-h .on{color:var(--green);}.kpi-strip-h .off{color:var(--red);}
+
+/* WEEKLY DROPS MINI (vlog/carousel/story +/- counters) */
+.weekly-drops{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
+@media(max-width:600px){.weekly-drops{grid-template-columns:1fr;}}
+.weekly-drop{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:12px;display:flex;align-items:center;justify-content:space-between;}
+.weekly-drop-label{font-size:11px;font-weight:700;color:var(--text);}
+.weekly-drop-meta{font-size:9px;color:var(--text3);letter-spacing:.3px;text-transform:uppercase;margin-top:2px;}
+.weekly-drop-vals{display:flex;align-items:center;gap:8px;}
+.weekly-drop-count{font-size:18px;font-weight:800;color:var(--text);min-width:40px;text-align:right;font-variant-numeric:tabular-nums;}
+.weekly-drop-btns{display:flex;gap:4px;}
+.weekly-drop-btns button{background:var(--surface3);border:1px solid var(--border);color:var(--text2);font-weight:700;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;padding:0;}
+.weekly-drop-btns button:hover{color:var(--text);border-color:var(--orange);}
+
+/* BASED MONTHLY TRACKER */
+.based-tracker{background:linear-gradient(135deg,rgba(20,184,166,.08),rgba(167,139,250,.04));border:1px solid var(--teal);border-radius:10px;padding:14px;}
+.based-tracker-h{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.based-tracker-h h3{font-size:13px;font-weight:800;color:var(--teal);}
+.based-tracker-h .right{margin-left:auto;font-size:10px;color:var(--text3);font-weight:600;}
+.based-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;}
+.based-tile{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px;}
+.based-tile-label{font-size:10px;font-weight:700;color:var(--text2);}
+.based-tile-vals{display:flex;align-items:baseline;gap:6px;margin-top:4px;}
+.based-tile-now{font-size:16px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;}
+.based-tile-sep{color:var(--text3);}
+.based-tile-tgt{font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums;}
+.based-tile-bar{height:4px;background:var(--surface3);border-radius:2px;margin-top:6px;overflow:hidden;}
+.based-tile-bar-fill{height:100%;background:var(--teal);border-radius:2px;}
+.based-tile-btns{display:flex;gap:4px;margin-top:6px;}
+.based-tile-btns button{background:var(--surface3);border:1px solid var(--border);color:var(--text2);font-weight:700;flex:1;padding:3px 0;border-radius:4px;cursor:pointer;font-size:11px;}
+.based-tile-btns button:hover{color:var(--text);border-color:var(--teal);}
+
+/* VIEW GROWTH */
+.view-tracker{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.view-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+.view-stat{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;}
+.view-stat-label{font-size:9px;font-weight:800;letter-spacing:.5px;color:var(--text3);text-transform:uppercase;}
+.view-stat-val{font-size:16px;font-weight:800;color:var(--text);margin-top:3px;font-variant-numeric:tabular-nums;}
+.view-stat-val input{background:transparent;border:none;outline:none;color:var(--text);font-weight:800;font-size:16px;font-family:inherit;width:100%;}
+.view-stat-val input:focus{outline:1px dashed var(--text3);outline-offset:2px;border-radius:3px;}
+.view-stat.target .view-stat-val{color:var(--blue);}
+.view-stat.current .view-stat-val{color:var(--orange);}
+.view-stat.pace.on .view-stat-val{color:var(--green);}
+.view-stat.pace.off .view-stat-val{color:var(--red);}
+.view-progress{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+.view-progress-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--green));border-radius:4px;}
+.view-progress-label{font-size:11px;color:var(--text3);margin-top:6px;text-align:center;}
+
+/* ANALYTICS SNAPSHOTS */
+.analytics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:14px;}
+.analytics-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.analytics-card h3{font-size:13px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px;color:var(--text);}
+.analytics-card h3 .ac-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.an-row{display:grid;grid-template-columns:1.4fr 80px 30px 90px;gap:6px;padding:8px 0;border-bottom:1px solid var(--surface2);font-size:12px;align-items:center;}
+.an-row:last-child{border-bottom:none;}
+.an-row.an-head{font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);border-bottom:2px solid var(--border);padding-bottom:8px;}
+.an-row .lbl{color:var(--text2);}
+.an-row .from{color:var(--text3);text-align:right;font-variant-numeric:tabular-nums;font-weight:600;}
+.an-row .arrow{text-align:center;font-weight:800;font-size:13px;}
+.an-row .to{color:var(--text);text-align:right;font-weight:700;font-variant-numeric:tabular-nums;}
+.an-row .to-pct{font-size:9px;font-weight:600;line-height:1;margin-top:2px;}
+.arrow.up{color:var(--green);}
+.arrow.down{color:var(--red);}
+.arrow.flat{color:var(--text3);}
+.to-pct.up{color:var(--green);}
+.to-pct.down{color:var(--red);}
+.analytics-update-tag{font-size:10px;font-weight:700;background:var(--surface2);border:1px solid var(--border);padding:5px 11px;border-radius:6px;color:var(--text2);letter-spacing:.3px;}
+.analytics-update-tag.due{color:var(--yellow);border-color:var(--yellow);background:rgba(234,179,8,.08);}
+.analytics-update-tag.overdue{color:var(--red);border-color:var(--red);background:rgba(239,68,68,.08);}
+.analytics-note{font-size:10.5px;color:var(--text3);font-style:italic;margin-top:8px;padding:8px 12px;background:var(--surface2);border-left:2px solid var(--text3);border-radius:4px;}
+
+/* EDITOR ROSTER */
+.editor-table{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.editor-row{display:grid;grid-template-columns:1.3fr 1fr 80px 80px 70px 110px 30px;gap:10px;padding:10px 14px;align-items:center;border-bottom:1px solid var(--surface2);font-size:12px;}
+.editor-row.header{background:var(--surface2);font-size:9px;font-weight:800;letter-spacing:.5px;color:var(--text3);text-transform:uppercase;border-bottom:2px solid var(--border);}
+.editor-row:last-child{border-bottom:none;}
+.editor-row input{background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none;width:100%;}
+.editor-row input:focus{outline:1px dashed var(--text3);outline-offset:2px;border-radius:3px;}
+.editor-row .name{font-weight:700;}
+.editor-row .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;}
+.editor-row .status{font-size:9px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:3px 7px;border-radius:4px;text-align:center;}
+.editor-row .status.top{background:rgba(34,197,94,.15);color:var(--green);}
+.editor-row .status.active{background:rgba(167,139,250,.15);color:var(--purple);}
+.editor-row .status.warning{background:rgba(234,179,8,.15);color:var(--yellow);}
+.editor-row .status.atrisk{background:rgba(239,68,68,.15);color:var(--red);}
+.editor-add{padding:10px 14px;background:var(--surface2);border-top:1px solid var(--border);display:flex;gap:8px;}
+.editor-add input{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:5px;font-size:12px;}
+.editor-add button{background:var(--purple);color:#fff;font-weight:700;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:11px;}
+.editor-del{font-size:14px;color:var(--text3);cursor:pointer;text-align:center;}
+.editor-del:hover{color:var(--red);}
+
+/* ITERATION LOG */
+.iter-log{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.iter-row{display:grid;grid-template-columns:90px 1fr 1fr 1fr 30px;gap:10px;padding:10px 0;border-bottom:1px solid var(--surface2);font-size:12px;align-items:start;}
+.iter-row:last-child{border-bottom:none;}
+.iter-row.header{font-size:9px;font-weight:800;letter-spacing:.5px;color:var(--text3);text-transform:uppercase;padding-bottom:8px;border-bottom:2px solid var(--border);}
+.iter-row input,.iter-row textarea{background:transparent;border:1px solid transparent;color:var(--text);font-size:12px;font-family:inherit;outline:none;width:100%;padding:4px 6px;resize:vertical;min-height:24px;}
+.iter-row input:focus,.iter-row textarea:focus{border-color:var(--border);background:var(--surface2);border-radius:4px;}
+.iter-date{color:var(--text3);font-size:11px;font-weight:600;}
+.iter-add{margin-top:10px;text-align:right;}
+.iter-add button{background:var(--teal);color:#0d0d0f;font-weight:700;border:none;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:11px;}
+
+/* SCHEDULE BLOCKS (operating manual reference) */
+.schedule{display:grid;grid-template-columns:1fr;gap:8px;}
+.block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:130px 1fr 100px;gap:14px;align-items:center;transition:all .15s;}
+.block:hover{border-color:var(--surface3);}
+.block.done{opacity:0.55;}
+.block-time{font-size:13px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;}
+.block-name{font-size:14px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.block-desc{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.45;}
+.block-dur{font-size:10px;font-weight:700;color:var(--text3);text-align:right;letter-spacing:0.4px;text-transform:uppercase;}
+.block.work{border-left:3px solid var(--blue);}
+.block.recording{border-left:3px solid var(--purple);}
+.block.posting{border-left:3px solid var(--orange);}
+.block.break{border-left:3px solid var(--yellow);opacity:0.85;}
+.block.agency{border-left:3px solid var(--pink);}
+.block.research{border-left:3px solid var(--teal);}
+.block.sync{border-left:3px solid var(--green);}
+.block.edit{border-left:3px solid var(--red);}
+
+@media(max-width:700px){
+  .block{grid-template-columns:1fr;gap:6px;}
+  .block-dur{text-align:left;}
+  .status-bar{grid-template-columns:1fr 1fr;}
+  .status-value{font-size:24px;}
+  .post-grid{grid-template-columns:1fr;}
+  .editor-row{grid-template-columns:1.3fr 1fr 60px 60px 60px 80px 30px;font-size:11px;gap:6px;padding:8px 10px;}
+  .analytics-grid{grid-template-columns:1fr;}
+  .wrap{padding:14px 16px;}
+  .tab-btn{padding:10px 12px;font-size:11px;}
+  .nav-links{flex-wrap:wrap;}
+  .header h1{font-size:15px;}
+}
+@media(max-width:480px){
+  .status-bar{grid-template-columns:1fr;}
+  .editor-row{grid-template-columns:1fr 70px 30px;}
+  .editor-row > div:nth-child(2),
+  .editor-row > div:nth-child(4),
+  .editor-row > div:nth-child(5){display:none;}
+}
+
+/* CHECK-IN BOXES */
+.checkin-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;}
+.checkin{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.checkin h3{font-size:13px;font-weight:800;color:var(--text);margin-bottom:6px;}
+.checkin .when{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;}
+.checkin ul{list-style:none;padding-left:0;}
+.checkin li{font-size:12px;color:var(--text2);padding:5px 0 5px 22px;position:relative;line-height:1.4;}
+.checkin li::before{content:'☐';position:absolute;left:0;font-size:14px;color:var(--text3);}
+
+/* COLLAPSIBLE SECTION */
+.collapse-h{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
+.collapse-arrow{font-size:11px;color:var(--text3);transition:transform .2s;}
+.collapsed .collapse-arrow{transform:rotate(-90deg);}
+.collapsed .collapse-body{display:none;}
+
+.note{font-size:11px;color:var(--text3);font-style:italic;padding:6px 0;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Sam + Zain <span>· Shared Ops</span></h1>
+    <p>Both edit. Live sync.</p>
+  </div>
+  <div class="nav-links">
+    <span id="syncBadge" style="font-size:11px;font-weight:800;letter-spacing:.3px;color:var(--text3);">● —</span>
+    <select id="whoAmI" class="nav-link who" onchange="setWho(this.value)">
+      <option value="sam">I'm Sam</option>
+      <option value="zain">I'm Zain</option>
+    </select>
+    <a class="nav-link" href="index.html">Editor Dashboard</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- TOP STATUS BAR -->
+  <div class="status-bar">
+    <div class="status-card views">
+      <div class="status-label">Weekly Views (TT + IG + YT)</div>
+      <div class="status-value" id="weeklyCombinedViews">—</div>
+      <div class="status-delta" id="weeklyViewsDelta"></div>
+    </div>
+    <div id="kpiCard" class="status-card kpi on">
+      <div class="status-label">This Week's KPIs <span id="daysLeft" style="float:right;color:var(--text3);text-transform:none;letter-spacing:0;font-weight:600;"></span></div>
+      <div class="status-value" id="kpiHitRate">0 / 6</div>
+      <div class="status-badge on" id="dinnerBadge">🍽️ DINNER: ON TRACK</div>
+    </div>
+    <div class="status-card posts">
+      <div class="status-label">Today's Posts</div>
+      <div class="status-value" id="todayPostsTotal">0 / 0</div>
+      <div class="status-delta" id="todayPostsSubtext"></div>
+    </div>
+    <div class="status-card editors">
+      <div class="status-label">Editor Output / Week</div>
+      <div class="status-value" id="editorTotal">0</div>
+      <div class="status-delta" id="editorDelta"></div>
+    </div>
+  </div>
+
+  <!-- WEEKLY KPI STRIP (read-only) -->
+  <div class="kpi-strip" id="kpiStrip"></div>
+
+  <!-- TAB NAV -->
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="today" onclick="switchTab('today')">Today</button>
+    <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics')">Analytics</button>
+    <button class="tab-btn" data-tab="team" onclick="switchTab('team')">Team</button>
+  </div>
+
+  <!-- ─── TAB: TODAY ─── -->
+  <div class="tab-panel active" id="tab-today">
+
+  <!-- TODAY'S ASSIGNMENTS -->
+  <div class="section">
+    <div class="section-title">
+      <span class="accent" style="background:var(--red);"></span>
+      Today's Checklist
+      <span class="right" id="todayDate"></span>
+    </div>
+    <div class="day-group" id="dayGroup"></div>
+    <div class="assignments" style="margin-top:14px;">
+      <div class="assign-add">
+        <input type="text" id="newAssignText" placeholder="Add task — try: @sam !high #editing due:tomorrow review vlog" onkeydown="if(event.key==='Enter')addAssignment()" />
+        <select id="newAssignOwner">
+          <option value="both">Both</option>
+          <option value="sam">Sam</option>
+          <option value="zain">Zain</option>
+        </select>
+        <button onclick="addAssignment()">+ Add</button>
+      </div>
+      <p class="assign-hint"><b>Smart syntax:</b> <code>@sam</code> <code>@zain</code> <code>@both</code> · <code>!high</code> <code>!med</code> <code>!low</code> · <code>#main</code> <code>#articulate</code> <code>#editing</code> <code>#filming</code> <code>#agency</code> · <code>due:today</code> <code>due:tomorrow</code> <code>due:fri</code> <code>due:6/15</code> · <code>waiting</code></p>
+    </div>
+    <p class="note" style="margin-top:6px;">Today / Tomorrow / Day After are auto-grouped by due date. Daily items (no due date) live in Today. Overdue tasks bump to Today on day-change.</p>
+  </div>
+
+  <!-- DAILY POST OUTPUT -->
+  <div class="section">
+    <div class="section-title">
+      <span class="accent" style="background:var(--orange);"></span>
+      Daily Post Output
+    </div>
+    <div class="post-grid">
+      <div class="post-panel">
+        <div class="post-panel-h"><span class="dot" style="background:var(--orange);"></span><h3>Sam Main Channel</h3></div>
+        <div class="post-rows" id="mainRows"></div>
+      </div>
+      <div class="post-panel">
+        <div class="post-panel-h"><span class="dot" style="background:var(--purple);"></span><h3>@teamarticulate</h3></div>
+        <div class="post-rows" id="artRows"></div>
+      </div>
+    </div>
+    <div class="post-reset"><button onclick="resetPosts()" style="opacity:.5;font-size:9px;">reset</button></div>
+  </div>
+
+  <!-- WEEKLY DROPS (manual: vlog/carousel/story) -->
+  <div class="section">
+    <div class="section-title">
+      <span class="accent" style="background:var(--green);"></span>
+      Weekly Drops — log when you ship
+      <span class="right">Daily counters above auto-flow to KPI strip</span>
+    </div>
+    <div class="weekly-drops" id="weeklyDrops"></div>
+  </div>
+
+  <!-- BASED MONTHLY DELIVERABLES -->
+  <div class="section">
+    <div class="section-title">
+      <span class="accent" style="background:var(--teal);"></span>
+      Based — Monthly Contract Tracker
+      <span class="right" id="basedMonthLabel">—</span>
+    </div>
+    <div class="based-tracker">
+      <div class="based-tracker-h">
+        <h3>Contractual deliverables — enforce these</h3>
+        <span class="right">Resets 1st of month</span>
+      </div>
+      <div class="based-grid" id="basedGrid"></div>
+      <p style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.5;">Every Based-featuring post tags @based account + shop. No competing personal-care or supplement brands appear in any Based post. All posts comply with FTC disclosure rules. Based Mobile (matte black, branded) featured in vlogs / car meets / street content.</p>
+    </div>
+  </div>
+
+  </div><!-- /tab-today -->
+
+  <!-- ─── TAB: ANALYTICS ─── -->
+  <div class="tab-panel" id="tab-analytics">
+
+  <!-- VIEW GROWTH TRACKER -->
+  <div class="section">
+    <div class="section-title">
+      <span class="accent" style="background:var(--blue);"></span>
+      Monthly View Growth (IG)
+    </div>
+    <div class="view-tracker">
+      <div class="view-grid">
+        <div class="view-stat">
+          <div class="view-stat-label">Last month</div>
+          <div class="view-stat-val"><input type="text" id="viewBaseline" value="" placeholder="15.4M" onchange="updateViewState()" /></div>
+        </div>
+        <div class="view-stat current">
+          <div class="view-stat-label">Month-to-date</div>
+          <div class="view-stat-val"><input type="text" id="viewCurrent" value="" placeholder="18M" onchange="updateViewState()" /></div>
+        </div>
+        <div class="view-stat target">
+          <div class="view-stat-label">2x target</div>
+          <div class="view-stat-val" id="viewTarget">—</div>
+        </div>
+        <div class="view-stat pace" id="viewPaceCard">
+          <div class="view-stat-label">Pace</div>
+          <div class="view-stat-val" id="viewPace">—</div>
+        </div>
+      </div>
+      <div class="view-progress"><div class="view-progress-fill" id="viewProgFill" style="width:0%;"></div></div>
+      <div class="view-progress-label" id="viewProgLabel">0% to target</div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS SNAPSHOTS -->
+  <div class="section">
+    <div class="section-title">
+      <span class="accent" style="background:var(--pink);"></span>
+      Analytics — Week over Week
+      <span class="right" id="nextAnalyticsUpdate">—</span>
+    </div>
+    <div class="analytics-grid" id="analyticsSnapshots"></div>
+  </div>
+
+  </div><!-- /tab-analytics -->
+
+  <!-- ─── TAB: TEAM ─── -->
+  <div class="tab-panel" id="tab-team">
+
+  <!-- EDITOR ROSTER -->
+  <div class="section">
+    <div class="section-title">
+      <span class="accent" style="background:var(--purple);"></span>
+      Editor Roster
+      <span class="right" id="editorCapacityNote"></span>
+    </div>
+    <div class="editor-table">
+      <div class="editor-row header">
+        <div>Name</div>
+        <div>Handle</div>
+        <div class="num">Usable</div>
+        <div class="num">Revisions</div>
+        <div class="num">Hit %</div>
+        <div>Status</div>
+        <div></div>
+      </div>
+      <div id="editorRows"></div>
+      <div class="editor-add">
+        <input type="text" id="newEditorName" placeholder="Name" />
+        <input type="text" id="newEditorHandle" placeholder="@handle" />
+        <select id="newEditorStatus" class="nav-link" style="background:var(--surface);">
+          <option value="active">Active</option>
+          <option value="top">Top</option>
+          <option value="warning">Warning</option>
+          <option value="atrisk">At-Risk</option>
+        </select>
+        <button onclick="addEditor()">+ Add editor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ITERATION LOG -->
+  <div class="section">
+    <div class="section-title">
+      <span class="accent" style="background:var(--teal);"></span>
+      Iteration Log — what we tested, what we learned
+    </div>
+    <div class="iter-log">
+      <div class="iter-row header">
+        <div>Date</div>
+        <div>What we tested</div>
+        <div>Result</div>
+        <div>Next move</div>
+        <div></div>
+      </div>
+      <div id="iterRows"></div>
+      <div class="iter-add"><button onclick="addIteration()">+ Log a new test</button></div>
+    </div>
+  </div>
+
+  </div><!-- /tab-team -->
+
+  <!-- COLLAPSIBLE: OPERATING MANUAL (always visible, below all tabs) -->
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────────────────
+const WHO_LS = 'who_am_i';
+
+const POST_DEFS = {
+  main: [
+    { key:'main_video_set', name:'Main video set',  target:3, note:'Cross-posted: IG Reels + YT Shorts + TikTok + Snapchat. Only check off when ALL 4 platforms are live.' },
+    { key:'main_trial_reel',name:'IG Trial Reels',  target:5, note:'IG-only, separate from main grid. 5 different test reels/day.' },
+  ],
+  art: [
+    { key:'art_ig',         name:'IG Reels',       target:4 },
+    { key:'art_tt',         name:'TikTok',         target:4 },
+  ],
+};
+
+// Default starting editor roster (from May 12-18 report)
+const DEFAULT_EDITORS = [
+  { id:'dhruv',    name:'Dhruv',    handle:'@dhruvsharma153',    usable:10, rev:1.3, hit:100, status:'top'     },
+  { id:'abdullah', name:'Abdullah', handle:'@thebrightabdullah', usable:10, rev:2.8, hit:91,  status:'warning' },
+  { id:'bilal',    name:'Bilal',    handle:'@bilal23',           usable:7,  rev:2.6, hit:100, status:'warning' },
+  { id:'thomas',   name:'Thomas',   handle:'@thomassabin3',      usable:5,  rev:1.4, hit:100, status:'active'  },
+];
+
+// Analytics snapshots — append a new one every 7 days
+// Each snapshot: TT, IG, YT metrics. nulls = not captured.
+const ANALYTICS_SNAPSHOTS = [
+  {
+    date: '2026-05-22',
+    label: 'May 22',
+    tt: { views_7d:3600000, followers_7d:643, comments_7d:463, shares_7d:9400, fyp_pct:47.4, search_pct:27.9, viewers_7d:1500000 },
+    ig: { views_7d:3570000, links_7d:746, interactions_7d:129000, followers:633363, reels_pct:85.7, profile_visits_7d:88500 },
+    yt: null,
+  },
+  {
+    date: '2026-05-29',
+    label: 'May 29',
+    tt: { views_7d:4300000, followers_7d:831, comments_7d:608, shares_7d:9200, fyp_pct:60.3, search_pct:20.4, viewers_7d:1800000 },
+    ig: { views_7d:4420000, links_7d:750, interactions_7d:141000, followers:633085, reels_pct:78.0, profile_visits_7d:81195 },
+    yt: { shorts_views_28d:420000, shorts_engaged_28d:233000, shorts_likes_28d:6900, subs_shorts_28d:371, revenue_28d:191.92, revenue_prior_28d:83.52, fyp_search_pct:63.2, watch_stayed_pct:66.7 },
+  },
+];
+
+// Weekly KPI definitions — drives the dinner bonus calculation
+// `auto` keys are computed from daily post counters; the rest are bumped via Weekly Drops mini.
+const WEEKLY_KPI_DEFS = [
+  { key:'main_videos', label:'Main sets (×4 platforms)',  target:21, auto:'main_video_set' },
+  { key:'trial_reels', label:'IG Trial Reels',            target:35, auto:'main_trial_reel' },
+  { key:'art_videos',  label:'Articulate (IG+TT)',        target:56, auto:['art_ig','art_tt'] },
+  { key:'yt_vlogs',    label:'YouTube vlogs',             target:2 },
+  { key:'carousels',   label:'IG Carousels (Based)',      target:2 },
+  { key:'ig_stories',  label:'IG Stories',                target:3 },
+];
+const WEEKLY_DROP_KEYS = ['yt_vlogs','carousels','ig_stories']; // the 3 manual ones
+
+// Based monthly contract deliverables
+const BASED_MONTHLY_DEFS = [
+  { key:'based_shortform', label:'Short-form videos featuring Based',   target:8 },
+  { key:'based_vlogs',     label:'Long-form vlogs w/ Based integration', target:8 },
+  { key:'based_carousels', label:'IG carousel placements',              target:8 },
+  { key:'based_stories',   label:'IG stories',                          target:4 },
+  { key:'based_shootdays', label:'Shoot days with Sam (per week × 4)',  target:16 },
+];
+
+// ─────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────
+let state = {
+  todayDate: '',
+  assignments: [],
+  posts: {},
+  editors: [...DEFAULT_EDITORS],
+  iterations: [],
+  weeklyKPIs: {},            // { weekStart, main_videos, ..., ig_stories }
+  basedMonthly: {},          // { monthStart, based_shortform, ... }
+  view: { baseline:'', current:'', updated:'' },
+};
+let saveTimer = null;
+
+// ─────────────────────────────────────────────────────────
+// DATE HELPERS
+// ─────────────────────────────────────────────────────────
+function todayKey(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+function weekStart(){
+  const d = new Date();
+  const day = d.getDay(); // 0=Sun
+  const diff = day === 0 ? -6 : 1 - day; // Monday start
+  const m = new Date(d);
+  m.setDate(d.getDate() + diff);
+  return m.toISOString().slice(0,10);
+}
+function fmtDate(s){
+  const d = new Date(s+'T12:00:00');
+  return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+}
+
+// ─────────────────────────────────────────────────────────
+// PERSISTENCE — localStorage + Netlify Blobs (real-time sync)
+// ─────────────────────────────────────────────────────────
+const STATE_LS = 'shared_state_v2';
+const SYNC_URL = '/api/state';
+let lastSyncedModified = 0;
+let syncMode = 'init';  // 'init' | 'online' | 'offline'
+let suppressNextSyncUp = false; // skip echo right after pulling
+
+function loadLocal(){
+  try{ return JSON.parse(localStorage.getItem(STATE_LS) || 'null'); }
+  catch(e){ return null; }
+}
+
+function saveLocal(){
+  try{ localStorage.setItem(STATE_LS, JSON.stringify(state)); }
+  catch(e){ console.warn('save failed', e); }
+}
+
+async function syncDown(){
+  try{
+    const r = await fetch(SYNC_URL + '?_t=' + Date.now(), { cache:'no-store' });
+    if(!r.ok) throw new Error('http '+r.status);
+    const { record, modified } = await r.json();
+    setSyncMode('online');
+    if(record && modified && modified > lastSyncedModified){
+      lastSyncedModified = modified;
+      const localState = state;
+      suppressNextSyncUp = true;
+      state = { ...localState, ...record };
+      // Re-run migrations in case day/week/month rolled while away
+      migrateDailyIfNeeded();
+      migrateWeeklyIfNeeded();
+      migrateMonthlyIfNeeded();
+      ensureDefaults();
+      render();
+      saveLocal();
+    }
+    return true;
+  }catch(e){
+    setSyncMode('offline');
+    return false;
+  }
+}
+
+async function syncUp(){
+  if(suppressNextSyncUp){ suppressNextSyncUp = false; return true; }
+  try{
+    const r = await fetch(SYNC_URL, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(state),
+    });
+    if(!r.ok) throw new Error('http '+r.status);
+    const { modified } = await r.json();
+    if(modified) lastSyncedModified = modified;
+    setSyncMode('online');
+    return true;
+  }catch(e){
+    setSyncMode('offline');
+    return false;
+  }
+}
+
+function scheduleSave(){
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { saveLocal(); syncUp(); }, 400);
+}
+
+function setSyncMode(m){
+  if(syncMode === m) return;
+  syncMode = m;
+  const el = document.getElementById('syncBadge');
+  if(!el) return;
+  if(m === 'online'){ el.textContent = '● Live'; el.style.color = 'var(--green)'; }
+  else if(m === 'offline'){ el.textContent = '● Offline'; el.style.color = 'var(--red)'; }
+  else { el.textContent = '● —'; el.style.color = 'var(--text3)'; }
+}
+
+// ─────────────────────────────────────────────────────────
+// STATE BOOTSTRAP
+// ─────────────────────────────────────────────────────────
+function migrateDailyIfNeeded(){
+  const today = todayKey();
+  if(state.todayDate !== today){
+    // Reset post counters for new day
+    state.todayDate = today;
+    state.posts = {};
+    [...POST_DEFS.main, ...POST_DEFS.art].forEach(p => { state.posts[p.key] = 0; });
+    // Remove yesterday's daily checklist items so they repopulate fresh
+    if(state.assignments) state.assignments = state.assignments.filter(a => !a.daily);
+    // Auto-rollover: unchecked custom tasks from yesterday or earlier get marked rolled.
+    // Past-due tasks get pushed to today's due date so they surface.
+    (state.assignments || []).forEach(a => {
+      if(a.done || a.daily) return;
+      // Mark as rolled if it was created before today
+      if(a.created && a.created.slice(0,10) < today){ a.rolled = true; }
+      // Bump overdue due dates to today
+      if(a.due && a.due < today){ a.due = today; }
+    });
+    // Archive tasks completed > 7 days ago to keep list lean
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+    const cutoffIso = cutoff.toISOString().slice(0,10);
+    if(state.assignments){
+      state.assignments = state.assignments.filter(a => {
+        if(!a.done) return true;
+        const when = (a.completed || a.created || '').slice(0,10);
+        return !when || when >= cutoffIso;
+      });
+    }
+  }
+  // Init post keys if missing
+  [...POST_DEFS.main, ...POST_DEFS.art].forEach(p => {
+    if(state.posts[p.key] === undefined) state.posts[p.key] = 0;
+  });
+}
+
+function migrateWeeklyIfNeeded(){
+  const ws = weekStart();
+  if(state.weeklyKPIs.weekStart !== ws){
+    state.weeklyKPIs = { weekStart: ws };
+    WEEKLY_KPI_DEFS.forEach(k => { state.weeklyKPIs[k.key] = 0; });
+  }
+  WEEKLY_KPI_DEFS.forEach(k => {
+    if(state.weeklyKPIs[k.key] === undefined) state.weeklyKPIs[k.key] = 0;
+  });
+}
+
+function monthStart(){
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
+}
+function migrateMonthlyIfNeeded(){
+  const ms = monthStart();
+  if(!state.basedMonthly || state.basedMonthly.monthStart !== ms){
+    state.basedMonthly = { monthStart: ms };
+    BASED_MONTHLY_DEFS.forEach(k => { state.basedMonthly[k.key] = 0; });
+  }
+  BASED_MONTHLY_DEFS.forEach(k => {
+    if(state.basedMonthly[k.key] === undefined) state.basedMonthly[k.key] = 0;
+  });
+}
+
+// Standard daily checklist for Zain — auto-resets each day
+// `auto` links a task to post counters: when target(s) hit, task auto-checks.
+// 8-item daily checklist (matches Zain_Deliverables.md DAILY CHECKLIST)
+const DAILY_DEFAULT_TASKS = [
+  { text:'Morning standup with Sam (8:30 AM) — yesterday\'s headline metric + today\'s plan', owner:'zain' },
+  { text:'Review overnight editor output — approve or send revisions', owner:'zain' },
+  { text:'3 main video sets posted across IG / YT Shorts / TikTok / Snapchat (all 4 platforms)', owner:'zain', auto:{ keys:['main_video_set'], targets:[3] } },
+  { text:'5 IG trial reels posted', owner:'zain', auto:{ keys:['main_trial_reel'], targets:[5] } },
+  { text:'Articulate: 4 IG Reels + 4 TikToks posted', owner:'zain', auto:{ keys:['art_ig','art_tt'], targets:[4,4] } },
+  { text:'Daily clip picked from raw footage', owner:'zain' },
+  { text:'Daily clip edited + queued for 8 AM tomorrow', owner:'zain' },
+  { text:'EOD Discord async sync (9 PM) — posts shipped, top/bottom performer, tomorrow\'s plan', owner:'zain' },
+];
+
+// "Active / Immediate" tasks — distributed over the next 3-4 days.
+// Today (May 30, Sat): HIGH-priority only — lighter daily load.
+// Sun May 31: medium-priority prep before vlog launch / Based contract starts.
+// Mon Jun 1: vlog launch + Based contract live — only quick wins.
+// Tue Jun 2 onward: lower-priority editor ops + tooling.
+const IMMEDIATE_TASKS = [
+  // ─── TODAY (May 30) — HIGH ONLY ───
+  { text:'Review the LA vlog Sahan cut today', owner:'sam', priority:'high', tag:'editing', due:'2026-05-30' },
+  { text:'Check up on Thomas — braiding clip + Haskell clip status', owner:'zain', priority:'high', tag:'editing', due:'2026-05-30' },
+  { text:'Build Inspiration Spreadsheet — log every Reel/TikTok Sam sends. Jhully = dedicated remaker (any view count).', owner:'zain', priority:'high', tag:'editing', due:'2026-05-30' },
+  { text:'Set up updated Sam Zia Discord — onboard ALL editors, create channels (inspirations + others)', owner:'zain', priority:'high', tag:'editing', due:'2026-05-30' },
+  { text:'June 1 vlog — Hype #1 (FULL EDIT style: visual + music + vibe). Post launch morning.', owner:'zain', priority:'high', tag:'editing', due:'2026-06-01' },
+  { text:'June 1 vlog — Hype #2 (raw segment + 5-10s edit outro). Post launch day.', owner:'zain', priority:'high', tag:'editing', due:'2026-06-01' },
+  { text:'June 1 vlog — Hype #3 (raw segment + 5-10s edit outro). Post June 2.', owner:'zain', priority:'high', tag:'editing', due:'2026-06-02' },
+
+  // ─── TOMORROW (Sun May 31) — medium prep ───
+  { text:'Document #inspirations channel criteria in pinned post: >1M views + strong commentary + strong b-roll + strong music. Any editor can grab a winning format if they run out of ideas. Jhully\'s dedicated track is below 1M too.', owner:'zain', priority:'med', tag:'editing', due:'2026-05-31' },
+  { text:'Pick Based-dedicated editor from new onboards (contract starts Mon)', owner:'zain', priority:'med', tag:'editing', due:'2026-05-31' },
+
+  // ─── MON JUN 1 — vlog launch day, light load only ───
+  { text:'Confirm Abdullah\'s two Trello accounts collapsed into one (quick win)', owner:'zain', priority:'low', tag:'editing', due:'2026-06-01' },
+
+  // ─── TUE JUN 2 — post-launch ───
+  { text:'Coordinate with Sahan on Bilal recurring-fixes 1-pager', owner:'zain', priority:'low', tag:'editing', due:'2026-06-02' },
+
+  // ─── WED JUN 3 — editor ops ───
+  { text:'Source stronger TikTok editor for Articulate Edit Page (Scroll\'d + Zaman guide format)', owner:'zain', priority:'low', tag:'editing', due:'2026-06-03' },
+  { text:'Surface Dhruv retention recommendation (rate bump or tier promotion)', owner:'zain', priority:'low', tag:'editing', due:'2026-06-03' },
+
+  // ─── THU JUN 4 — tooling ───
+  { text:'Auto-title bot setup — generate title options from video context/transcript', owner:'zain', priority:'low', tag:'editing', due:'2026-06-04' },
+];
+
+// When called, auto-checks any task whose linked post counters all meet target.
+// Also auto-unchecks if counters drop back below.
+function autoCheckLinkedTasks(){
+  if(!state.assignments) return false;
+  let changed = false;
+  state.assignments.forEach(a => {
+    if(!a.auto) return;
+    const met = a.auto.keys.every((k, i) => (state.posts[k] || 0) >= a.auto.targets[i]);
+    if(met && !a.done){ a.done = true; changed = true; }
+    else if(!met && a.done){ a.done = false; changed = true; }
+  });
+  return changed;
+}
+
+function ensureDefaults(){
+  if(!state.editors || !state.editors.length) state.editors = [...DEFAULT_EDITORS];
+  if(!state.assignments) state.assignments = [];
+  if(!state.iterations) state.iterations = [];
+  if(!state.view) state.view = { baseline:'', current:'', updated:'' };
+  if(!state.view.baseline) state.view.baseline = '15.4M';
+  if(!state.view.current)  state.view.current  = '18M';
+  ensureDailyAssignments();
+  ensureImmediateAssignments();
+}
+
+// Seed the "active / immediate" tasks once — tracked by a flag so re-deploys
+// don't re-spawn them after the user has worked through or deleted them.
+// Bump this when IMMEDIATE_TASKS changes — also retro-fits due/priority/tag
+// onto matching existing tasks so previously-seeded users get the new schedule.
+const IMMEDIATE_SEED_VERSION = 'v5-2026-05-30-thomas-check';
+function ensureImmediateAssignments(){
+  if(state.immediateSeedVersion === IMMEDIATE_SEED_VERSION) return;
+  IMMEDIATE_TASKS.forEach((t, i) => {
+    const existing = (state.assignments || []).find(a => a.text === t.text);
+    if(existing){
+      // Update canonical fields (don't touch done state / artifact / id)
+      if(t.due)      existing.due = t.due;
+      if(t.priority) existing.priority = t.priority;
+      if(t.tag)      existing.tag = t.tag;
+      if(t.owner)    existing.owner = t.owner;
+    } else {
+      state.assignments.push({
+        id: 'imm_' + Date.now() + '_' + i,
+        text: t.text,
+        owner: t.owner,
+        done: false,
+        priority: t.priority || null,
+        tag: t.tag || null,
+        due: t.due || null,
+        status: 'todo',
+        created: new Date().toISOString(),
+        created_by: 'system',
+      });
+    }
+  });
+  state.immediateSeedVersion = IMMEDIATE_SEED_VERSION;
+}
+
+function ensureDailyAssignments(){
+  const hasDaily = state.assignments.some(a => a.daily);
+  if(!hasDaily){
+    DAILY_DEFAULT_TASKS.forEach((t, i) => {
+      state.assignments.unshift({
+        id: 'd_' + Date.now() + '_' + i,
+        text: t.text,
+        owner: t.owner,
+        done: false,
+        daily: true,
+      });
+    });
+  }
+}
+
+async function bootstrap(){
+  const w = localStorage.getItem(WHO_LS) || 'sam';
+  document.getElementById('whoAmI').value = w;
+
+  // 1. Hydrate from local first so UI shows instantly even offline
+  const local = loadLocal();
+  if(local && typeof local === 'object') state = { ...state, ...local };
+
+  // 2. Pull latest from Netlify Blobs (overrides local if newer)
+  await syncDown();
+
+  // 3. Migrations + render
+  migrateDailyIfNeeded();
+  migrateWeeklyIfNeeded();
+  migrateMonthlyIfNeeded();
+  ensureDefaults();
+  render();
+
+  // 4. Push any new immediate-task seeds back up
+  if(!suppressNextSyncUp) syncUp();
+
+  // 5. Background sync + time-tick loops
+  setInterval(() => { if(!document.hidden) syncDown(); }, 8000);
+  setInterval(periodicTimeCheck, 60000);
+  document.addEventListener('visibilitychange', () => {
+    if(!document.hidden){ syncDown(); periodicTimeCheck(); }
+  });
+}
+
+// Runs every minute (and on tab refocus) so day/week/month boundaries get
+// caught even if the tab has been open for hours.
+function periodicTimeCheck(){
+  const before = state.todayDate + '|' + state.weeklyKPIs.weekStart + '|' + (state.basedMonthly && state.basedMonthly.monthStart);
+  migrateDailyIfNeeded();
+  migrateWeeklyIfNeeded();
+  migrateMonthlyIfNeeded();
+  const after = state.todayDate + '|' + state.weeklyKPIs.weekStart + '|' + (state.basedMonthly && state.basedMonthly.monthStart);
+  if(before !== after){
+    scheduleSave();
+    render();
+  } else {
+    // Even if no boundary crossed, re-render Based tracker so the
+    // "Contract begins June 1" banner disappears the moment Jun 1 hits.
+    renderBasedTracker();
+  }
+}
+
+function setWho(w){
+  localStorage.setItem(WHO_LS, w);
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────────────
+function render(){
+  document.getElementById('todayDate').textContent = fmtDate(todayKey());
+  renderAssignments();
+  renderPosts();
+  renderKPIs();
+  renderView();
+  renderAnalyticsSnapshots();
+  renderEditors();
+  renderIterations();
+  renderBasedTracker();
+  renderTopStatus();
+}
+
+// ── TOP STATUS CARDS ──
+function renderTopStatus(){
+  // 1. Combined weekly views (from latest analytics snapshot)
+  const snaps = (typeof ANALYTICS_SNAPSHOTS !== 'undefined') ? ANALYTICS_SNAPSHOTS : [];
+  const last = snaps[snaps.length - 1];
+  const prev = snaps.length >= 2 ? snaps[snaps.length - 2] : null;
+  if(last){
+    const lastTT = (last.tt && last.tt.views_7d) || 0;
+    const lastIG = (last.ig && last.ig.views_7d) || 0;
+    const lastYT_7d = (last.yt && last.yt.shorts_views_28d) ? last.yt.shorts_views_28d / 4 : 0;
+    const combinedNow = lastTT + lastIG + lastYT_7d;
+    document.getElementById('weeklyCombinedViews').textContent = fmtCompact(combinedNow);
+    if(prev){
+      const prevTT = (prev.tt && prev.tt.views_7d) || 0;
+      const prevIG = (prev.ig && prev.ig.views_7d) || 0;
+      const prevYT_7d = (prev.yt && prev.yt.shorts_views_28d) ? prev.yt.shorts_views_28d / 4 : 0;
+      const combinedPrev = prevTT + prevIG + prevYT_7d;
+      const delta = combinedNow - combinedPrev;
+      const pct = combinedPrev ? Math.round((delta / combinedPrev) * 100) : 0;
+      const deltaEl = document.getElementById('weeklyViewsDelta');
+      if(delta > 0){ deltaEl.className = 'status-delta up'; deltaEl.textContent = `▲ +${pct}% vs ${prev.label}`; }
+      else if(delta < 0){ deltaEl.className = 'status-delta down'; deltaEl.textContent = `▼ ${pct}% vs ${prev.label}`; }
+      else { deltaEl.className = 'status-delta flat'; deltaEl.textContent = `flat vs ${prev.label}`; }
+    }
+  }
+
+  // Days left in week (settles Sunday EOD)
+  const dayOfWeek = new Date().getDay(); // 0=Sun, 1=Mon...6=Sat
+  const daysLeftInWeek = dayOfWeek === 0 ? 0 : (7 - dayOfWeek);
+  const daysLeftEl = document.getElementById('daysLeft');
+  if(daysLeftEl){
+    daysLeftEl.textContent = daysLeftInWeek === 0 ? 'settles tonight' :
+      daysLeftInWeek === 1 ? '1 day left' : `${daysLeftInWeek} days left`;
+  }
+
+  // 2. KPI hit rate + dinner badge
+  let hit = 0;
+  WEEKLY_KPI_DEFS.forEach(k => {
+    if((state.weeklyKPIs[k.key] || 0) >= k.target) hit++;
+  });
+  const total = WEEKLY_KPI_DEFS.length;
+  document.getElementById('kpiHitRate').textContent = `${hit} / ${total}`;
+  const onTrack = hit >= Math.ceil(total * 0.6);
+  const kpiCard = document.getElementById('kpiCard');
+  kpiCard.classList.toggle('on', onTrack);
+  kpiCard.classList.toggle('off', !onTrack);
+  const badge = document.getElementById('dinnerBadge');
+  badge.className = 'status-badge ' + (onTrack ? 'on' : 'off');
+  badge.textContent = onTrack ? '🍽️ DINNER: ON TRACK' : '💸 DINNER: ZAIN PAYS';
+
+  // 3. Today's posts — set in renderPosts already, just compute target % delta line
+  let postsTotal = 0, postsTarget = 0;
+  [...POST_DEFS.main, ...POST_DEFS.art].forEach(p => {
+    postsTotal += state.posts[p.key] || 0;
+    postsTarget += p.target;
+  });
+  const sub = document.getElementById('todayPostsSubtext');
+  const postPct = postsTarget ? Math.round((postsTotal / postsTarget) * 100) : 0;
+  if(postPct >= 100){ sub.className = 'status-delta up'; sub.textContent = `▲ ${postPct}% complete`; }
+  else if(postPct >= 50){ sub.className = 'status-delta flat'; sub.textContent = `${postPct}% complete`; }
+  else { sub.className = 'status-delta down'; sub.textContent = `${postPct}% complete`; }
+
+  // 4. Editor delta — computed in renderEditors but show capacity ratio here
+  let totalUsable = 0;
+  state.editors.forEach(e => { totalUsable += e.usable || 0; });
+  const editorDelta = document.getElementById('editorDelta');
+  const need = 112;
+  const gap = need - totalUsable;
+  if(gap <= 0){ editorDelta.className = 'status-delta up'; editorDelta.textContent = `▲ covering ${need}+ demand`; }
+  else { editorDelta.className = 'status-delta down'; editorDelta.textContent = `▼ short ${gap} of ${need}`; }
+}
+
+// ── ANALYTICS SNAPSHOTS ──
+function fmtCompact(n){
+  if(n == null) return '—';
+  if(n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M';
+  if(n >= 1e3) return (n/1e3).toFixed(1).replace(/\.0$/,'') + 'K';
+  return Math.round(n).toString();
+}
+function fmtMoney(n){ return n == null ? '—' : '$' + n.toFixed(2); }
+function fmtPlus(n){ return n == null ? '—' : '+' + n.toLocaleString(); }
+function fmtPct(n){ return n == null ? '—' : n + '%'; }
+
+function arrowFor(from, to){
+  if(from == null || to == null) return { cls:'flat', char:'—', pct:'' };
+  if(from === to) return { cls:'flat', char:'=', pct:'flat' };
+  const delta = to - from;
+  const pct = from === 0 ? 100 : Math.round((delta / from) * 100);
+  return delta > 0
+    ? { cls:'up', char:'▲', pct:`+${pct}%` }
+    : { cls:'down', char:'▼', pct:`${pct}%` };
+}
+
+function renderAnalyticsSnapshots(){
+  const wrap = document.getElementById('analyticsSnapshots');
+  if(!wrap) return;
+  const snaps = ANALYTICS_SNAPSHOTS;
+  if(snaps.length < 1) return;
+  const last = snaps[snaps.length - 1];
+  const prev = snaps.length >= 2 ? snaps[snaps.length - 2] : null;
+
+  // Next-update countdown
+  const lastDate = new Date(last.date + 'T12:00:00');
+  const nextDue = new Date(lastDate);
+  nextDue.setDate(lastDate.getDate() + 7);
+  const today = new Date();
+  const msPerDay = 1000*60*60*24;
+  const daysLeft = Math.ceil((nextDue - today) / msPerDay);
+  const tag = document.getElementById('nextAnalyticsUpdate');
+  if(tag){
+    const dueLabel = nextDue.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    if(daysLeft <= 0){
+      tag.textContent = `📊 Update OVERDUE · was ${dueLabel}`;
+      tag.className = 'right analytics-update-tag overdue';
+    } else if(daysLeft === 1){
+      tag.textContent = `📊 Next update tomorrow · ${dueLabel}`;
+      tag.className = 'right analytics-update-tag due';
+    } else if(daysLeft <= 2){
+      tag.textContent = `📊 Next update in ${daysLeft} days · ${dueLabel}`;
+      tag.className = 'right analytics-update-tag due';
+    } else {
+      tag.textContent = `📊 Next update in ${daysLeft} days · ${dueLabel}`;
+      tag.className = 'right analytics-update-tag';
+    }
+  }
+
+  // Define rows per platform: [label, key, formatter]
+  const ttRows = [
+    ['7-day views',            'views_7d',     fmtCompact],
+    ['Net followers 7d',       'followers_7d', fmtPlus],
+    ['Comments 7d',            'comments_7d',  fmtNum],
+    ['Shares 7d',              'shares_7d',    fmtCompact],
+    ['Total viewers 7d',       'viewers_7d',   fmtCompact],
+    ['For You % (algo push)',  'fyp_pct',      fmtPct],
+    ['Search %',               'search_pct',   fmtPct],
+  ];
+  const igRows = [
+    ['7-day views',            'views_7d',           fmtCompact],
+    ['Interactions 7d',        'interactions_7d',    fmtCompact],
+    ['Link taps 7d',           'links_7d',           fmtNum],
+    ['Profile visits 7d',      'profile_visits_7d',  fmtCompact],
+    ['Total followers',        'followers',          fmtCompact],
+    ['Reels % of views',       'reels_pct',          fmtPct],
+  ];
+  const ytRows = [
+    ['Shorts views 28d',       'shorts_views_28d',   fmtCompact],
+    ['Engaged views 28d',      'shorts_engaged_28d', fmtCompact],
+    ['Shorts likes 28d',       'shorts_likes_28d',   fmtCompact],
+    ['Subs from Shorts 28d',   'subs_shorts_28d',    fmtPlus],
+    ['Revenue 28d',            'revenue_28d',        fmtMoney, 'revenue_prior_28d'],
+    ['Watch %: stayed',        'watch_stayed_pct',   fmtPct],
+    ['Search source %',        'fyp_search_pct',     fmtPct],
+  ];
+
+  const buildCard = (title, color, rows, prevKey, lastKey) => {
+    const prevData = prev ? prev[prevKey] : null;
+    const lastData = last[lastKey];
+    if(!lastData) return '';
+    const headHtml = `
+      <div class="an-row an-head">
+        <div>Metric</div>
+        <div class="from">${prev ? prev.label : '—'}</div>
+        <div></div>
+        <div class="to">${last.label}</div>
+      </div>
+    `;
+    const rowsHtml = rows.map(r => {
+      const [lbl, key, fmt, fromKeyOverride] = r;
+      const fromVal = fromKeyOverride
+        ? (lastData[fromKeyOverride] != null ? lastData[fromKeyOverride] : null)
+        : (prevData ? prevData[key] : null);
+      const toVal = lastData[key];
+      const arrow = arrowFor(fromVal, toVal);
+      const fromLbl = fromKeyOverride ? 'Prior 28d' : (prev ? prev.label : '');
+      return `
+        <div class="an-row">
+          <div class="lbl">${lbl}</div>
+          <div class="from" title="${fromLbl}">${fromVal == null ? '—' : fmt(fromVal)}</div>
+          <div class="arrow ${arrow.cls}">${arrow.char}</div>
+          <div class="to">${fmt(toVal)}${arrow.pct ? `<div class="to-pct ${arrow.cls}">${arrow.pct}</div>` : ''}</div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="analytics-card">
+        <h3><span class="ac-dot" style="background:${color};"></span>${title}</h3>
+        ${headHtml}
+        ${rowsHtml}
+      </div>
+    `;
+  };
+
+  wrap.innerHTML =
+    buildCard('TikTok', 'var(--text)', ttRows, 'tt', 'tt') +
+    buildCard('Instagram', 'var(--pink)', igRows, 'ig', 'ig') +
+    buildCard('YouTube', 'var(--red)', ytRows, 'yt', 'yt');
+}
+
+// ── ASSIGNMENTS ──
+// ── TASK FILTER STATE ──
+let taskFilter = 'all';
+function setTaskFilter(f){
+  taskFilter = f;
+  document.querySelectorAll('.assign-chip').forEach(c => c.classList.toggle('active', c.dataset.filter === f));
+  renderAssignments();
+}
+
+function taskMatchesFilter(a){
+  if(taskFilter === 'all') return true;
+  const who = localStorage.getItem(WHO_LS) || 'sam';
+  if(taskFilter === 'mine') return a.owner === who || a.owner === 'both';
+  if(taskFilter === 'sam')  return a.owner === 'sam' || a.owner === 'both';
+  if(taskFilter === 'zain') return a.owner === 'zain' || a.owner === 'both';
+  if(taskFilter === 'today'){
+    const today = todayKey();
+    return a.due === today || a.daily;
+  }
+  if(taskFilter === 'waiting') return a.status === 'waiting' || a.status === 'blocked';
+  if(taskFilter === 'high') return a.priority === 'high';
+  return true;
+}
+
+function taskSortKey(a){
+  // priority high first, then due date asc, then daily, then created
+  const prioRank = {high:0, med:1, low:2};
+  const p = prioRank[a.priority] != null ? prioRank[a.priority] : 3;
+  const d = a.due || '9999-99-99';
+  const dl = a.daily ? 0 : 1;
+  const done = a.done ? 1 : 0;
+  return [done, p, d, dl, a.created || ''].join('|');
+}
+
+function dueBadge(due){
+  if(!due) return '';
+  const today = todayKey();
+  let cls = 'due-future', lbl = due;
+  if(due < today){ cls = 'due-overdue'; lbl = '⏰ overdue ' + due.slice(5); }
+  else if(due === today){ cls = 'due-today'; lbl = '⏰ today'; }
+  else {
+    const tmr = new Date(); tmr.setDate(tmr.getDate()+1);
+    if(due === tmr.toISOString().slice(0,10)) lbl = '⏰ tmr';
+    else lbl = '⏰ ' + due.slice(5);
+  }
+  return `<span class="assign-badge ${cls}">${lbl}</span>`;
+}
+
+function renderTaskRow(a){
+  const badges = [];
+  if(a.auto) badges.push('<span class="assign-badge" style="background:var(--surface3);color:var(--text3);">AUTO</span>');
+  if(a.priority) badges.push(`<span class="assign-badge prio-${a.priority}">!${a.priority}</span>`);
+  if(a.tag) badges.push(`<span class="assign-badge tag-${a.tag}">#${a.tag}</span>`);
+  if(a.status === 'waiting') badges.push('<span class="assign-badge status-waiting">⏳ waiting</span>');
+  if(a.status === 'blocked') badges.push('<span class="assign-badge status-blocked">🚫 blocked</span>');
+  if(a.due) badges.push(dueBadge(a.due));
+  if(a.rolled) badges.push('<span class="assign-badge rolled">↻ rolled</span>');
+  if(a.artifact){
+    const short = a.artifact.length > 30 ? a.artifact.slice(0,28)+'…' : a.artifact;
+    badges.push(`<a class="assign-badge" href="${escapeHtml(a.artifact)}" target="_blank" rel="noopener" style="background:rgba(34,197,94,.15);color:var(--green);text-decoration:none;">🔗 ${escapeHtml(short)}</a>`);
+  } else if(!a.daily && !a.done){
+    badges.push(`<span class="assign-badge" style="background:transparent;color:var(--text3);border:1px dashed var(--surface3);cursor:pointer;" onclick="setArtifact('${a.id}')">+ artifact</span>`);
+  }
+  const badgeRow = badges.length ? `<div class="assign-badges">${badges.join('')}</div>` : '';
+  const rowCls = (a.priority === 'high' && !a.done) ? ' has-prio-high' : '';
+  return `
+    <div class="assign-row${a.done?' done':''}${rowCls}">
+      <div class="assign-cb${a.done?' done':''}" onclick="toggleAssign('${a.id}')">${a.done?'✓':''}</div>
+      <div class="assign-body">
+        <textarea class="assign-text" rows="1" onchange="editAssign('${a.id}',this.value)" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';">${escapeHtml(a.text)}</textarea>
+        ${badgeRow}
+      </div>
+      <span class="assign-owner ${a.owner}" onclick="cycleOwner('${a.id}')">${a.owner.toUpperCase()}</span>
+      <span class="assign-del" onclick="deleteAssign('${a.id}')">×</span>
+    </div>`;
+}
+
+function dayBucket(a, today, tomorrow, dayAfter){
+  // Daily items + no-due tasks live in Today
+  if(a.daily || !a.due) return 'today';
+  if(a.due <= today) return 'today';      // overdue + today
+  if(a.due === tomorrow) return 'tomorrow';
+  if(a.due === dayAfter) return 'dayafter';
+  return 'later';
+}
+
+function fmtDayLabel(iso){
+  const d = new Date(iso+'T12:00:00');
+  return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+
+function renderAssignments(){
+  const wrap = document.getElementById('dayGroup');
+  if(!wrap) return;
+
+  const tasks = (state.assignments || []).filter(taskMatchesFilter);
+  const today = todayKey();
+  const tDate = new Date(today+'T12:00:00');
+  const tomorrow = new Date(tDate); tomorrow.setDate(tDate.getDate()+1);
+  const dayAfter = new Date(tDate); dayAfter.setDate(tDate.getDate()+2);
+  const tom = tomorrow.toISOString().slice(0,10);
+  const day2 = dayAfter.toISOString().slice(0,10);
+
+  const buckets = { today:[], tomorrow:[], dayafter:[], later:[] };
+  tasks.forEach(a => buckets[dayBucket(a, today, tom, day2)].push(a));
+
+  // Sort within bucket: undone first, then priority, then daily/created
+  const prioRank = {high:0, med:1, low:2};
+  Object.keys(buckets).forEach(k => {
+    buckets[k].sort((a,b) => {
+      const doneCmp = (a.done?1:0) - (b.done?1:0);
+      if(doneCmp) return doneCmp;
+      const pa = prioRank[a.priority] != null ? prioRank[a.priority] : 3;
+      const pb = prioRank[b.priority] != null ? prioRank[b.priority] : 3;
+      if(pa !== pb) return pa - pb;
+      const dailyCmp = (a.daily?0:1) - (b.daily?0:1);
+      if(dailyCmp) return dailyCmp;
+      return (a.created || '').localeCompare(b.created || '');
+    });
+  });
+
+  function renderBox(key, label, isoDate){
+    const cls = key;
+    const items = buckets[key];
+    const undone = items.filter(t => !t.done).length;
+    const total = items.length;
+    const dateLine = isoDate ? `<span class="date">${fmtDayLabel(isoDate)}</span>` : '';
+    const countLine = total ? `<span class="count">${undone} open · ${total} total</span>` : '<span class="count">empty</span>';
+    const body = items.length
+      ? items.map(renderTaskRow).join('')
+      : '<div class="day-box-empty">— nothing scheduled —</div>';
+    return `
+      <div class="day-box ${cls}">
+        <div class="day-box-h">
+          <span class="lbl">${label}</span>
+          ${dateLine}
+          ${countLine}
+        </div>
+        <div class="day-box-body">${body}</div>
+      </div>`;
+  }
+
+  const html = [
+    renderBox('today', 'Today', today),
+    renderBox('tomorrow', 'Tomorrow', tom),
+    renderBox('dayafter', 'Day After', day2),
+  ];
+  // Only show Later if it has anything
+  if(buckets.later.length){
+    html.push(renderBox('later', 'Later (beyond)', null));
+  }
+  wrap.innerHTML = html.join('');
+
+  document.querySelectorAll('.assign-text').forEach(ta => {
+    ta.style.height='auto'; ta.style.height=(ta.scrollHeight)+'px';
+  });
+  updateTabBadge();
+}
+
+function updateTabBadge(){
+  const undone = (state.assignments || []).filter(a => !a.done).length;
+  const todayBtn = document.querySelector('.tab-btn[data-tab="today"]');
+  if(!todayBtn) return;
+  let badge = todayBtn.querySelector('.tab-badge');
+  if(undone > 0){
+    if(!badge){
+      badge = document.createElement('span');
+      badge.className = 'tab-badge';
+      todayBtn.appendChild(badge);
+    }
+    badge.textContent = undone;
+  } else if(badge){
+    badge.remove();
+  }
+}
+// ── Smart task parsing (matches zaintask CLI) ──
+const VALID_TAGS = ['main','articulate','editing','filming','agency','other'];
+const VALID_PRIOS = ['high','med','low'];
+const DAY_NAMES = {sun:6,mon:0,tue:1,tues:1,wed:2,thu:3,thur:3,thurs:3,fri:4,sat:5};
+function parseDue(s){
+  s = s.toLowerCase().trim();
+  const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const iso = d => d.toISOString().slice(0,10);
+  if(s === 'today' || s === 'tod') return iso(today);
+  if(s === 'tomorrow' || s === 'tmr' || s === 'tom'){ const t = new Date(today); t.setDate(t.getDate()+1); return iso(t); }
+  if(DAY_NAMES[s] != null){
+    const target = DAY_NAMES[s];
+    let delta = (target - today.getDay() + 7) % 7;
+    if(delta === 0) delta = 7;
+    const t = new Date(today); t.setDate(t.getDate()+delta); return iso(t);
+  }
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})[\/-](\d{1,2})$/);
+  if(m){
+    let mo = +m[1], d = +m[2], yr = today.getFullYear();
+    let cand = new Date(yr, mo-1, d);
+    if(cand < today) cand = new Date(yr+1, mo-1, d);
+    return iso(cand);
+  }
+  return null;
+}
+function parseTaskString(raw, defaultOwner){
+  const task = { owner: defaultOwner || 'both', priority: null, tag: null, due: null, status: 'todo' };
+  const keep = [];
+  raw.split(/\s+/).forEach(tok => {
+    const tl = tok.toLowerCase();
+    if(tl.startsWith('@') && ['sam','zain','both'].includes(tl.slice(1))) task.owner = tl.slice(1);
+    else if(tl.startsWith('!') && VALID_PRIOS.includes(tl.slice(1))) task.priority = tl.slice(1);
+    else if(tl.startsWith('#') && VALID_TAGS.includes(tl.slice(1))) task.tag = tl.slice(1);
+    else if(tl.startsWith('due:')){ const d = parseDue(tl.slice(4)); if(d) task.due = d; else keep.push(tok); }
+    else if(tl === 'waiting') task.status = 'waiting';
+    else keep.push(tok);
+  });
+  task.text = keep.join(' ').trim();
+  return task;
+}
+
+function addAssignment(){
+  const raw = document.getElementById('newAssignText').value.trim();
+  if(!raw) return;
+  const defaultOwner = document.getElementById('newAssignOwner').value;
+  const p = parseTaskString(raw, defaultOwner);
+  if(!p.text) return;
+  const who = localStorage.getItem(WHO_LS) || 'sam';
+  state.assignments.push({
+    id: 'a_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    text: p.text,
+    owner: p.owner,
+    done: false,
+    priority: p.priority,
+    tag: p.tag,
+    due: p.due,
+    status: p.status,
+    created: new Date().toISOString(),
+    created_by: who,
+  });
+  document.getElementById('newAssignText').value = '';
+  scheduleSave();
+  renderAssignments();
+}
+function toggleAssign(id){
+  const a = state.assignments.find(x => x.id === id);
+  if(!a) return;
+  a.done = !a.done;
+  const who = localStorage.getItem(WHO_LS) || 'sam';
+  if(a.done){ a.completed = new Date().toISOString(); a.completed_by = who; }
+  else { delete a.completed; delete a.completed_by; }
+  scheduleSave(); renderAssignments();
+}
+function editAssign(id, val){
+  const a = state.assignments.find(x => x.id === id);
+  if(a){ a.text = val; scheduleSave(); }
+}
+function setArtifact(id){
+  const a = state.assignments.find(x => x.id === id);
+  if(!a) return;
+  const v = prompt('Artifact link (Frame.io / Trello / Doc / Drive URL):', a.artifact || '');
+  if(v === null) return;
+  a.artifact = v.trim() || null;
+  scheduleSave(); renderAssignments();
+}
+function deleteAssign(id){
+  state.assignments = state.assignments.filter(x => x.id !== id);
+  scheduleSave();
+  renderAssignments();
+}
+function cycleOwner(id){
+  const a = state.assignments.find(x => x.id === id);
+  if(!a) return;
+  const order = ['both','sam','zain'];
+  a.owner = order[(order.indexOf(a.owner)+1) % order.length];
+  scheduleSave();
+  renderAssignments();
+}
+
+// ── POST COUNTERS ──
+function renderPosts(){
+  ['main','art'].forEach(group => {
+    const el = document.getElementById(group + 'Rows');
+    el.innerHTML = POST_DEFS[group].map(p => {
+      const n = state.posts[p.key] || 0;
+      const done = n >= p.target;
+      const noteLine = p.note ? `<div class="post-row-note">${escapeHtml(p.note)}</div>` : '';
+      return `
+        <div class="post-row${done?' done':''}">
+          <div>
+            <div class="post-row-name">${p.name}${done?' ✓':''}</div>
+            ${noteLine}
+          </div>
+          <div class="post-row-count post-row-n">${n}<span style="color:var(--text3);font-size:12px;font-weight:600;"> / ${p.target}</span></div>
+          <div class="post-row-btns">
+            <button onclick="bumpPost('${p.key}',-1)">−</button>
+            <button onclick="bumpPost('${p.key}',1)">+1</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  });
+  // Total in top status
+  let tot = 0, tgt = 0;
+  [...POST_DEFS.main, ...POST_DEFS.art].forEach(p => {
+    tot += state.posts[p.key] || 0;
+    tgt += p.target;
+  });
+  document.getElementById('todayPostsTotal').textContent = `${tot} / ${tgt}`;
+  // Also update weekly KPIs from posts
+  recomputeWeeklyFromPosts();
+  // Top status (posts subtext) recomputed in renderTopStatus
+  if(typeof renderTopStatus === 'function') renderTopStatus();
+}
+function bumpPost(key, delta){
+  // Clamp daily counter at 0
+  const prev = state.posts[key] || 0;
+  const next = Math.max(0, prev + delta);
+  const actualDelta = next - prev;
+  state.posts[key] = next;
+  // Flow into matching weekly KPI(s)
+  WEEKLY_KPI_DEFS.forEach(k => {
+    if(!k.auto) return;
+    const keys = Array.isArray(k.auto) ? k.auto : [k.auto];
+    if(keys.includes(key)){
+      state.weeklyKPIs[k.key] = Math.max(0, (state.weeklyKPIs[k.key] || 0) + actualDelta);
+    }
+  });
+  if(autoCheckLinkedTasks()) renderAssignments();
+  scheduleSave();
+  renderPosts();
+  renderKPIs();
+}
+function resetPosts(){
+  if(!confirm('Reset all of today\'s post counters to 0?')) return;
+  [...POST_DEFS.main, ...POST_DEFS.art].forEach(p => { state.posts[p.key] = 0; });
+  scheduleSave();
+  renderPosts();
+  renderKPIs();
+}
+
+// ── WEEKLY KPIs ──
+// Tally auto KPIs from this-week post counters. Posts reset each day, so we
+// keep a running weekly tally in weeklyKPIs[*] and adjust by delta on each bump.
+function recomputeWeeklyFromPosts(){
+  // No-op now — bumpPost handles delta -> weekly tally directly.
+}
+
+function renderKPIs(){
+  const strip = document.getElementById('kpiStrip');
+  if(!strip) return;
+  let hitCount = 0;
+  const tiles = WEEKLY_KPI_DEFS.map(k => {
+    const actual = state.weeklyKPIs[k.key] || 0;
+    const pct = Math.min(100, Math.round((actual / k.target) * 100));
+    const cls = pct >= 100 ? '' : (pct >= 60 ? 'lag' : 'critical');
+    if(pct >= 100) hitCount++;
+    const autoCls = k.auto ? ' auto' : '';
+    return `
+      <div class="kpi-tile${autoCls}" title="${k.auto ? 'Auto-tallied from daily output' : 'Manual: log via Weekly Drops'}">
+        <div class="kpi-tile-label">${k.label}</div>
+        <div class="kpi-tile-vals">
+          <span class="kpi-tile-now">${actual}</span>
+          <span class="kpi-tile-sep">/</span>
+          <span class="kpi-tile-tgt">${k.target}</span>
+        </div>
+        <div class="kpi-tile-bar"><div class="kpi-tile-bar-fill ${cls}" style="width:${pct}%;"></div></div>
+      </div>`;
+  }).join('');
+  const ws = state.weeklyKPIs.weekStart || weekStart();
+  const onTrack = hitCount >= Math.ceil(WEEKLY_KPI_DEFS.length * 0.6);
+  const statusCls = onTrack ? 'on' : 'off';
+  const statusTxt = onTrack ? '🍽️ ON TRACK' : '💸 OFF TRACK';
+  strip.innerHTML = `
+    <div class="kpi-strip-h">
+      <span>Week of ${ws} · ${hitCount}/${WEEKLY_KPI_DEFS.length} hit</span>
+      <span class="right ${statusCls}">${statusTxt}</span>
+    </div>
+    ${tiles}`;
+  renderWeeklyDrops();
+}
+
+function renderWeeklyDrops(){
+  const wrap = document.getElementById('weeklyDrops');
+  if(!wrap) return;
+  wrap.innerHTML = WEEKLY_DROP_KEYS.map(key => {
+    const def = WEEKLY_KPI_DEFS.find(k => k.key === key);
+    const n = state.weeklyKPIs[key] || 0;
+    return `
+      <div class="weekly-drop">
+        <div>
+          <div class="weekly-drop-label">${def.label}</div>
+          <div class="weekly-drop-meta">target ${def.target}/wk</div>
+        </div>
+        <div class="weekly-drop-vals">
+          <span class="weekly-drop-count">${n}<span style="color:var(--text3);font-size:11px;font-weight:600;"> /${def.target}</span></span>
+          <div class="weekly-drop-btns">
+            <button onclick="bumpWeekly('${key}',-1)">−</button>
+            <button onclick="bumpWeekly('${key}',1)">+1</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+function bumpWeekly(key, delta){
+  state.weeklyKPIs[key] = Math.max(0, (state.weeklyKPIs[key] || 0) + delta);
+  scheduleSave();
+  renderKPIs();
+}
+
+const BASED_CONTRACT_START = '2026-06-01';
+
+function renderBasedTracker(){
+  const grid = document.getElementById('basedGrid');
+  const label = document.getElementById('basedMonthLabel');
+  if(!grid) return;
+
+  const today = todayKey();
+  const contractLive = today >= BASED_CONTRACT_START;
+  const ms = state.basedMonthly.monthStart || monthStart();
+  if(label){
+    const d = new Date(ms+'T12:00:00');
+    label.textContent = contractLive
+      ? d.toLocaleDateString('en-US',{month:'long',year:'numeric'})
+      : 'Starts June 1';
+  }
+
+  // Pre-launch banner
+  const banner = !contractLive ? `
+    <div style="grid-column:1/-1;background:rgba(234,179,8,.10);border:1px dashed var(--yellow);border-radius:7px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--yellow);font-weight:700;">
+      ⏳ Contract begins June 1 — counters preview only (won't reset until June 1 hits)
+    </div>` : '';
+
+  const tiles = BASED_MONTHLY_DEFS.map(k => {
+    const n = state.basedMonthly[k.key] || 0;
+    const pct = Math.min(100, Math.round((n / k.target) * 100));
+    const dimStyle = contractLive ? '' : 'opacity:.55;';
+    return `
+      <div class="based-tile" style="${dimStyle}">
+        <div class="based-tile-label">${k.label}</div>
+        <div class="based-tile-vals">
+          <span class="based-tile-now">${n}</span>
+          <span class="based-tile-sep">/</span>
+          <span class="based-tile-tgt">${k.target}</span>
+        </div>
+        <div class="based-tile-bar"><div class="based-tile-bar-fill" style="width:${pct}%;"></div></div>
+        <div class="based-tile-btns">
+          <button onclick="bumpBased('${k.key}',-1)" ${contractLive?'':'disabled'}>−</button>
+          <button onclick="bumpBased('${k.key}',1)" ${contractLive?'':'disabled'}>+1</button>
+        </div>
+      </div>`;
+  }).join('');
+  grid.innerHTML = banner + tiles;
+}
+function bumpBased(key, delta){
+  state.basedMonthly[key] = Math.max(0, (state.basedMonthly[key] || 0) + delta);
+  scheduleSave();
+  renderBasedTracker();
+}
+
+// ── VIEW GROWTH ──
+function parseNum(s){
+  if(!s) return 0;
+  s = String(s).trim().toUpperCase();
+  let mult = 1;
+  if(s.endsWith('M')){ mult = 1e6; s = s.slice(0,-1); }
+  else if(s.endsWith('K')){ mult = 1e3; s = s.slice(0,-1); }
+  return parseFloat(s) * mult;
+}
+function fmtNum(n){
+  if(n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M';
+  if(n >= 1e3) return (n/1e3).toFixed(1).replace(/\.0$/,'') + 'K';
+  return Math.round(n).toString();
+}
+function updateViewState(){
+  state.view = state.view || {};
+  state.view.baseline = document.getElementById('viewBaseline').value;
+  state.view.current = document.getElementById('viewCurrent').value;
+  state.view.updated = todayKey();
+  scheduleSave();
+  renderView();
+}
+function renderView(){
+  document.getElementById('viewBaseline').value = state.view.baseline || '';
+  document.getElementById('viewCurrent').value = state.view.current || '';
+  const baseline = parseNum(state.view.baseline);
+  const target = baseline * 2;
+  const current = parseNum(state.view.current);
+  document.getElementById('viewTarget').textContent = baseline ? fmtNum(target) : '—';
+  // Days into month
+  const now = new Date();
+  const dayOfMonth = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const monthProgress = dayOfMonth / daysInMonth;
+  const expectedNow = target * monthProgress;
+  const paceVs = expectedNow ? (current / expectedNow) : 0;
+  const pctOfTarget = target ? (current / target) : 0;
+  document.getElementById('viewPace').textContent = baseline ? Math.round(paceVs * 100) + '%' : '—';
+  const paceCard = document.getElementById('viewPaceCard');
+  paceCard.classList.remove('on','off');
+  paceCard.classList.add(paceVs >= 0.95 ? 'on' : 'off');
+  document.getElementById('viewProgFill').style.width = Math.min(100, pctOfTarget * 100) + '%';
+  document.getElementById('viewProgLabel').textContent = baseline
+    ? `${Math.round(pctOfTarget * 100)}% to target · month is ${Math.round(monthProgress * 100)}% through`
+    : 'Enter baseline + current to see pace';
+}
+
+// ── EDITOR ROSTER ──
+function renderEditors(){
+  const wrap = document.getElementById('editorRows');
+  let totalUsable = 0;
+  wrap.innerHTML = state.editors.map(e => {
+    totalUsable += e.usable || 0;
+    return `
+      <div class="editor-row">
+        <div class="name"><input type="text" value="${escapeHtml(e.name)}" onchange="editEditor('${e.id}','name',this.value)" /></div>
+        <div><input type="text" value="${escapeHtml(e.handle)}" onchange="editEditor('${e.id}','handle',this.value)" /></div>
+        <div class="num"><input type="number" value="${e.usable}" onchange="editEditor('${e.id}','usable',this.value)" /></div>
+        <div class="num"><input type="number" step="0.1" value="${e.rev}" onchange="editEditor('${e.id}','rev',this.value)" /></div>
+        <div class="num"><input type="number" value="${e.hit}" onchange="editEditor('${e.id}','hit',this.value)" /></div>
+        <div><span class="status ${e.status}" onclick="cycleEditorStatus('${e.id}')">${e.status.toUpperCase()}</span></div>
+        <div class="editor-del" onclick="deleteEditor('${e.id}')">×</div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('editorTotal').textContent = totalUsable;
+  // Capacity note — total weekly editing demand:
+  // 21 main video sets + 35 trial reels + 56 Articulate = 112 short-form / week
+  const need = 112;
+  const note = totalUsable >= need
+    ? `${totalUsable} usable / week — covering weekly content demand (${need}+)`
+    : `${totalUsable} usable / week — short ${need - totalUsable} of weekly demand (need ${need}+)`;
+  document.getElementById('editorCapacityNote').textContent = note;
+}
+function editEditor(id, field, val){
+  const e = state.editors.find(x => x.id === id);
+  if(!e) return;
+  if(field === 'usable' || field === 'hit') e[field] = parseInt(val) || 0;
+  else if(field === 'rev') e[field] = parseFloat(val) || 0;
+  else e[field] = val;
+  scheduleSave();
+  renderEditors();
+}
+function cycleEditorStatus(id){
+  const e = state.editors.find(x => x.id === id);
+  if(!e) return;
+  const order = ['top','active','warning','atrisk'];
+  e.status = order[(order.indexOf(e.status) + 1) % order.length];
+  scheduleSave();
+  renderEditors();
+}
+function deleteEditor(id){
+  if(!confirm('Remove this editor from the roster?')) return;
+  state.editors = state.editors.filter(x => x.id !== id);
+  scheduleSave();
+  renderEditors();
+}
+function addEditor(){
+  const n = document.getElementById('newEditorName').value.trim();
+  const h = document.getElementById('newEditorHandle').value.trim();
+  if(!n) return;
+  state.editors.push({
+    id:'e_'+Date.now(), name:n, handle:h || '@', usable:0, rev:0, hit:0,
+    status: document.getElementById('newEditorStatus').value
+  });
+  document.getElementById('newEditorName').value = '';
+  document.getElementById('newEditorHandle').value = '';
+  scheduleSave();
+  renderEditors();
+}
+
+// ── ITERATION LOG ──
+function renderIterations(){
+  const wrap = document.getElementById('iterRows');
+  if(!state.iterations.length){
+    wrap.innerHTML = '<p class="note" style="text-align:center;padding:14px 0;">No iterations logged yet. Click "+ Log a new test" below.</p>';
+    return;
+  }
+  wrap.innerHTML = state.iterations.slice().reverse().map(it => `
+    <div class="iter-row">
+      <div class="iter-date">${it.date}</div>
+      <div><textarea rows="2" onchange="editIter('${it.id}','tested',this.value)">${escapeHtml(it.tested)}</textarea></div>
+      <div><textarea rows="2" onchange="editIter('${it.id}','result',this.value)">${escapeHtml(it.result)}</textarea></div>
+      <div><textarea rows="2" onchange="editIter('${it.id}','next',this.value)">${escapeHtml(it.next)}</textarea></div>
+      <div class="editor-del" onclick="deleteIter('${it.id}')">×</div>
+    </div>
+  `).join('');
+}
+function addIteration(){
+  state.iterations.push({
+    id:'i_'+Date.now(), date:todayKey().slice(5), tested:'', result:'', next:''
+  });
+  scheduleSave();
+  renderIterations();
+}
+function editIter(id, field, val){
+  const it = state.iterations.find(x => x.id === id);
+  if(it){ it[field] = val; scheduleSave(); }
+}
+function deleteIter(id){
+  state.iterations = state.iterations.filter(x => x.id !== id);
+  scheduleSave();
+  renderIterations();
+}
+
+// ── UTIL ──
+function escapeHtml(s){
+  if(s === undefined || s === null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── TAB SWITCHING ──
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+  localStorage.setItem('zain_current_tab', name);
+}
+(function restoreTab(){
+  const t = localStorage.getItem('zain_current_tab') || 'today';
+  if(['today','analytics','team'].indexOf(t) >= 0) switchTab(t);
+})();
+
+// ── INIT ──
+bootstrap();
+</script>
+</body>
+</html>

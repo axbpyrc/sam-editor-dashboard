@@ -1,0 +1,19 @@
+# OS
+.DS_Store
+
+# Netlify local creds/cache
+.netlify/
+
+# Dependencies (restored via npm install)
+node_modules/
+
+# Logs (runtime, change constantly)
+*.log
+watchdog.state.json
+
+# Old artifacts
+weekly-report.pdf
+tunnel.log
+
+# Generated assets (keep CSV out since it can change frequently)
+# sam_approved_videos.csv  # uncomment to ignore if it gets stale

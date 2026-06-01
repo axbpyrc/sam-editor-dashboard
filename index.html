@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Editor Dashboard · Sam X Articulate</title>
+<style>
+:root{--bg:#0a0a0a;--panel:#141414;--border:#222;--text:#e5e5e5;--muted:#888}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-weight:500;padding:24px;max-width:1400px;margin:0 auto;line-height:1.5}
+h1{font-size:28px;font-weight:800;margin-bottom:4px}
+h2{font-size:18px;font-weight:700;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.subtitle{color:var(--muted);font-size:13px;margin-bottom:24px}
+.week-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px}
+.updated-pill{font-size:11px;color:#888;background:#1a1a1a;padding:4px 10px;border-radius:12px;border:1px solid var(--border)}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:24px}
+.metric{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px}
+.metric .value{font-size:26px;font-weight:800}
+.metric .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.metric .sub{font-size:11px;color:#555;margin-top:2px}
+table{width:100%;border-collapse:separate;border-spacing:2px;font-size:13px}
+th{background:#1a1a1a;padding:10px 8px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+th:first-child,td:first-child{text-align:left}
+td{padding:10px 8px;background:var(--panel)}
+td.rank{font-size:16px;font-weight:800;width:40px;text-align:center}
+td.name{font-weight:700}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.day-cell{text-align:center;font-weight:700;font-size:13px;width:44px}
+th.day-cell{width:44px}
+.week-total{font-weight:800}
+.day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:18px;margin-bottom:24px}
+.day-col{display:flex;flex-direction:column;align-items:center}
+.day-bar-wrap{height:120px;width:100%;display:flex;align-items:flex-end;justify-content:center}
+.day-bar{width:60%;border-radius:4px 4px 0 0;min-height:2px}
+.day-count{font-size:18px;font-weight:800;margin-top:6px}
+.day-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.day-date{font-size:10px;color:#555}
+.alert-card{background:var(--panel);border:1px solid var(--border);border-left:3px solid #3b82f6;padding:0;margin-bottom:8px;border-radius:6px}
+.alert-card>summary{padding:12px 16px;cursor:pointer;font-size:14px;list-style:none;display:flex;align-items:center;gap:8px}
+.alert-card>summary::-webkit-details-marker{display:none}
+.alert-card[open]>summary{border-bottom:1px solid var(--border)}
+.alert-expand{margin-left:auto;font-size:11px;color:var(--muted)}
+.alert-body{padding:14px 16px;font-size:13px;color:#ccc;line-height:1.7}
+.alert-actions{margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
+.tabs{display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tab{background:transparent;border:none;color:var(--muted);padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;font-family:inherit;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text)}
+.tab[data-ch="todo"].active{border-bottom-color:#ef4444}
+.tab[data-ch="week"].active{border-bottom-color:#3b82f6}
+.tab[data-ch="month"].active{border-bottom-color:#06b6d4}
+.tab[data-ch="qc"].active{border-bottom-color:#a855f7}
+.tab[data-ch="report"].active{border-bottom-color:#f59e0b}
+.tab[data-ch="runway"].active{border-bottom-color:#22c55e}
+.tab[data-ch="trends"].active{border-bottom-color:#f97316}
+.tab[data-ch="pay"].active{border-bottom-color:#eab308}
+.tab[data-ch="art"].active{border-bottom-color:#c084fc}
+.tab[data-ch="sam"].active{border-bottom-color:#4ade80}
+.tab-badge{display:inline-block;background:#222;color:var(--muted);font-size:10px;padding:2px 6px;border-radius:8px;margin-left:4px;font-weight:600}
+.tab.active .tab-badge{background:#333;color:var(--text)}
+.panel{display:none}.panel.active{display:block}
+.todo-frame-wrap{position:relative;width:100%;height:calc(100vh - 220px);min-height:600px;border:1px solid #2a2a2a;border-radius:8px;overflow:hidden;background:#0d0d0f;}
+.todo-frame-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+.todo-frame-open{display:inline-block;font-size:11px;color:#888;text-decoration:none;padding:6px 12px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;margin-bottom:10px;}
+.todo-frame-open:hover{color:#fff;border-color:#444}
+.spark-bar{display:inline-block;flex:1;min-height:2px;border-radius:1px}
+.pipeline-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.pipeline-tile{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px}
+.pipeline-tile .big{font-size:32px;font-weight:800}
+.pipeline-tile .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.pipeline-tile .sub{font-size:11px;color:#555;margin-top:4px}
+.star-key{font-size:12px;color:#888;margin-bottom:12px}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center}
+.pay-note{background:#1a1500;border:1px solid #3a2e00;border-radius:8px;padding:12px 16px;font-size:13px;color:#fbbf24;margin-bottom:20px}
+
+/* ── Enhancements ─────────────────────────────────────────────── */
+html{scroll-behavior:smooth}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:#0a0a0a}
+::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:6px;border:2px solid #0a0a0a}
+::-webkit-scrollbar-thumb:hover{background:#3a3a3a}
+.metric,.pipeline-tile{transition:transform .15s ease,border-color .15s ease}
+.metric:hover,.pipeline-tile:hover{transform:translateY(-2px);border-color:#333}
+tbody tr{transition:background .1s ease}
+tbody tr:hover td{background:#1b1b1b}
+.row-hidden{display:none!important}
+
+/* Top app bar */
+.appbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.appbar h1{margin:0}
+.fresh{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);background:#141414;border:1px solid var(--border);padding:5px 11px;border-radius:20px}
+.fresh-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulse 2s infinite}
+.fresh.stale .fresh-dot{background:#ef4444;animation:none}
+.fresh.stale{color:#fca5a5;border-color:#3a1a1a;background:#1a0e0e}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}70%{box-shadow:0 0 0 6px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.toolbar{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+.search-box{background:#141414;border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;font-family:inherit;width:170px;transition:border-color .15s,width .2s}
+.search-box:focus{outline:none;border-color:#3b82f6;width:210px}
+.search-box::placeholder{color:#555}
+.tool-btn{background:#141414;border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--muted);font-size:14px;cursor:pointer;font-family:inherit;transition:all .15s;line-height:1}
+.tool-btn:hover{color:var(--text);border-color:#333;background:#1a1a1a}
+.tool-btn.on{color:#fff;border-color:#3b82f6;background:#11203a}
+
+/* Attention center */
+.attention{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:20px}
+.attention>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700}
+.attention>summary::-webkit-details-marker{display:none}
+.attn-count{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:12px;font-weight:700}
+.attn-pill{padding:2px 9px;border-radius:10px}
+.attn-pill.red{background:#2a0e0e;color:#fca5a5}
+.attn-pill.yellow{background:#241c00;color:#fcd34d}
+.attn-chev{color:var(--muted);font-size:11px;transition:transform .2s}
+.attention[open] .attn-chev{transform:rotate(90deg)}
+.attn-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.attn-item{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:8px;font-size:13px;background:#101010;border-left:3px solid #444}
+.attn-item.attn-red{border-left-color:#ef4444;background:#160d0d}
+.attn-item.attn-yellow{border-left-color:#f59e0b;background:#161203}
+.attn-icon{font-size:16px;flex-shrink:0}
+.attn-text{flex:1;color:#ddd}
+.attn-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.attn-jump{background:#222;border:1px solid #333;color:#ccc;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit;transition:all .15s}
+.attn-jump:hover{background:#2e2e2e;color:#fff}
+.attn-link{color:#60a5fa;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap}
+.attn-link:hover{text-decoration:underline}
+.attn-clear{color:#4ade80;font-size:13px;font-weight:600}
+
+/* Sticky tabs */
+.tabs{position:sticky;top:0;z-index:50;background:rgba(10,10,10,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding-top:8px}
+.copyable{cursor:pointer;border-radius:4px;transition:background .12s}
+.copyable:hover{background:#11203a!important;outline:1px solid #2a4a7a}
+
+/* Toasts */
+.toast-wrap{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:10px;z-index:200;pointer-events:none}
+.toast{background:#16181d;border:1px solid #2a2e36;border-left:3px solid #3b82f6;border-radius:8px;padding:12px 16px;font-size:13px;color:#e5e5e5;box-shadow:0 8px 30px rgba(0,0,0,.5);min-width:240px;max-width:340px;animation:slidein .25s ease;pointer-events:auto}
+.toast.red{border-left-color:#ef4444}.toast.green{border-left-color:#22c55e}
+.toast b{display:block;margin-bottom:2px}
+@keyframes slidein{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.panel.active{animation:fade .22s ease}
+
+/* Keyboard help */
+.kbd-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.kbd-overlay.show{display:flex}
+.kbd-card{background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:26px 30px;max-width:420px;width:90%}
+.kbd-card h3{font-size:16px;margin-bottom:16px}
+.kbd-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:13px;color:#ccc;border-bottom:1px solid #1c1c1c}
+kbd{background:#222;border:1px solid #383838;border-bottom-width:2px;border-radius:5px;padding:2px 8px;font-size:12px;font-family:ui-monospace,monospace;color:#fff;min-width:20px;text-align:center;display:inline-block}
+
+@media print{
+  .tabs,.toolbar,.appbar .fresh,footer{display:none!important}
+  .panel{display:block!important;page-break-inside:avoid}
+  body{background:#fff;color:#000}
+}
+</style></head>
+<body>
+<div class="appbar">
+  <h1>Editor Dashboard</h1>
+  <span class="fresh" id="fresh"><span class="fresh-dot"></span><span id="fresh-txt">just now</span></span>
+  <div class="toolbar">
+    <input class="search-box" id="search" type="search" placeholder="Filter editor…  /" autocomplete="off" spellcheck="false">
+    <button class="tool-btn" id="btn-notif" title="Desktop alerts for urgent items (n)" onclick="toggleNotif()">🔔</button>
+    <button class="tool-btn" id="btn-sound" title="Sound on new urgent alert (m)" onclick="toggleSound()">🔇</button>
+    <a class="tool-btn" href="https://trello.com/b/69ef4125e100f5ef226e2311" target="_blank" rel="noopener" title="Open Trello board" style="text-decoration:none">🗂️</a>
+    <a class="tool-btn" href="weekly-report.pdf" download title="Download weekly report PDF" style="text-decoration:none">⬇︎</a>
+    <button class="tool-btn" title="Refresh now (r)" onclick="manualReload()">↻</button>
+    <button class="tool-btn" title="Keyboard shortcuts (?)" onclick="toggleHelp()">⌨</button>
+  </div>
+</div>
+<div class="subtitle">Sam X Articulate · <span id="live-time"></span> · auto-refresh paused while you interact</div>
+
+<div class="tabs">
+  <button class="tab" data-ch="todo" onclick="show('todo')">📋 To-Do</button>
+  <button class="tab active" data-ch="week" onclick="show('week')">📊 This Week <span class="tab-badge">3</span></button>
+  <button class="tab" data-ch="month" onclick="show('month')">📅 This Month <span class="tab-badge">0</span></button>
+  <button class="tab" data-ch="report" onclick="show('report')">📋 Report Card</button>
+  <button class="tab" data-ch="runway" onclick="show('runway')">🛣️ Runway <span class="tab-badge" style="">18d</span></button>
+  <button class="tab" data-ch="trends" onclick="show('trends')">📈 Trends</button>
+  <button class="tab" data-ch="pay" onclick="show('pay')">💰 Pay</button>
+  <button class="tab" data-ch="art" onclick="show('art')">🎙️ Articulate</button>
+  <button class="tab" data-ch="sam" onclick="show('sam')">🎬 Sam (Main)</button>
+</div>
+
+<!-- ═══ TO-DO (shared with Sam) ═══ -->
+<div id="panel-todo" class="panel">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+    <h2 style="border:none;padding:0;margin:0">📋 Shared To-Do</h2>
+    <span style="color:#888;font-size:12px">Live-synced with Sam · same data as the standalone view</span>
+    <a class="todo-frame-open" href="/shared.html" target="_blank" style="margin-left:auto;margin-bottom:0">↗ open standalone</a>
+  </div>
+  <div class="todo-frame-wrap">
+    <iframe src="/shared.html" title="Sam + Zain Shared To-Do" loading="lazy"></iframe>
+  </div>
+</div>
+
+<!-- ═══ THIS WEEK ═══ -->
+<div id="panel-week" class="panel active">
+  <div class="week-header">
+    <h2 style="border:none;padding:0;margin:0">Week of May 31 – May 6, 2026</h2>
+    <span class="updated-pill">updated <span id="updated-secs">0</span>s ago</span>
+  </div>
+  <div class="summary">
+    <div class="metric"><div class="value">3</div><div class="label">Team clips this week</div><div class="sub">delivered to QC</div></div>
+    <div class="metric"><div class="value" style="color:#ef4444">15%</div><div class="label">% of target</div><div class="sub">target 20 (2d × 2 × 5 editors)</div></div>
+    <div class="metric"><div class="value" style="color:#ef4444">1/5</div><div class="label">Editors on pace</div><div class="sub">≥2 clips/active day</div></div>
+    <div class="metric"><div class="value" style="color:#ef4444">-92%</div><div class="label">vs last week</div><div class="sub">last week: 40</div></div>
+    <div class="metric"><div class="value" style="color:#ef4444">10</div><div class="label">Projected week total</div><div class="sub">at current pace · full target 70</div></div>
+  </div>
+  <h2>Pipeline — right now</h2>
+  <div class="pipeline-grid">
+    <div class="pipeline-tile"><div class="big">91</div><div class="lbl">Approved videos</div><div class="sub">passed QC · ready to post</div></div>
+    <div class="pipeline-tile"><div class="big" style="color:#22c55e">47</div><div class="lbl">of which are posted</div><div class="sub">live on platforms</div></div>
+    <div class="pipeline-tile"><div class="big" style="color:#f59e0b">36</div><div class="lbl">Ongoing videos</div><div class="sub">being edited or in QC</div></div>
+  </div>
+  <h2>Daily team output</h2>
+  <div class="day-grid"><div class="day-col" style="opacity:1">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:50%;background:#86efac;"></div></div>
+          <div class="day-count" style="color:#e5e5e5">1</div>
+          <div class="day-label">Sun</div>
+          <div class="day-date">5/31</div></div>
+<div class="day-col" style="opacity:1">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:100%;background:#3b82f6;border:2px solid #60a5fa;"></div></div>
+          <div class="day-count" style="color:#60a5fa">2</div>
+          <div class="day-label">TODAY</div>
+          <div class="day-date">6/1</div></div>
+<div class="day-col" style="opacity:0.25">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:0%;background:#2a2a2a;"></div></div>
+          <div class="day-count" style="color:#e5e5e5"></div>
+          <div class="day-label">Tue</div>
+          <div class="day-date">6/2</div></div>
+<div class="day-col" style="opacity:0.25">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:0%;background:#2a2a2a;"></div></div>
+          <div class="day-count" style="color:#e5e5e5"></div>
+          <div class="day-label">Wed</div>
+          <div class="day-date">6/3</div></div>
+<div class="day-col" style="opacity:0.25">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:0%;background:#2a2a2a;"></div></div>
+          <div class="day-count" style="color:#e5e5e5"></div>
+          <div class="day-label">Thu</div>
+          <div class="day-date">6/4</div></div>
+<div class="day-col" style="opacity:0.25">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:0%;background:#2a2a2a;"></div></div>
+          <div class="day-count" style="color:#e5e5e5"></div>
+          <div class="day-label">Fri</div>
+          <div class="day-date">6/5</div></div>
+<div class="day-col" style="opacity:0.25">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:0%;background:#2a2a2a;"></div></div>
+          <div class="day-count" style="color:#e5e5e5"></div>
+          <div class="day-label">Sat</div>
+          <div class="day-date">6/6</div></div></div>
+  <h2>Leaderboard</h2>
+  <div class="star-key">⭐ = 3 clips in one day &nbsp;·&nbsp; 🌠 = 4+ clips (shooting star)</div>
+  <table><thead><tr>
+    <th style="width:40px">#</th><th style="text-align:left">Editor</th>
+    <th class="day-cell">Su</th><th class="day-cell">Mo</th><th class="day-cell">Tu</th>
+    <th class="day-cell">We</th><th class="day-cell">Th</th><th class="day-cell">Fr</th><th class="day-cell">Sa</th>
+    <th>Total</th><th>Approved</th><th>Avg Rev</th><th>Pace</th>
+  </tr></thead><tbody><tr><td class='rank'>🥇</td><td class='name'>Dhruv</td><td class="day-cell" style="background:#111;color:#fff;">0</td><td class="day-cell" style="background:#1a3a2a;color:#fff;">2</td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class='num week-total'>2</td><td class='num'>1</td><td class='num'>2.2</td><td><span style="color:#22c55e;font-weight:700">ON PACE</span></td></tr>
+<tr><td class='rank'>🥈</td><td class='name'>Thomas</td><td class="day-cell" style="background:#1a1a1a;color:#fff;">1</td><td class="day-cell" style="background:#111;color:#fff;">0</td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class='num week-total'>1</td><td class='num'>0</td><td class='num'>0.6</td><td><span style="color:#f59e0b;font-weight:700">BELOW</span></td></tr>
+<tr><td class='rank'>🥉</td><td class='name'>Abdullah</td><td class="day-cell" style="background:#111;color:#fff;">0</td><td class="day-cell" style="background:#111;color:#fff;">0</td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class='num week-total'>0</td><td class='num'>0</td><td class='num'>1.2</td><td><span style="color:#f59e0b;font-weight:700">BELOW</span></td></tr>
+<tr><td class='rank'>4</td><td class='name'>Bilal</td><td class="day-cell" style="background:#111;color:#fff;">0</td><td class="day-cell" style="background:#111;color:#fff;">0</td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class='num week-total'>0</td><td class='num'>0</td><td class='num'>2.0</td><td><span style="color:#f59e0b;font-weight:700">BELOW</span></td></tr>
+<tr><td class='rank'>5</td><td class='name'>Jhully</td><td class="day-cell" style="background:#111;color:#fff;">0</td><td class="day-cell" style="background:#111;color:#fff;">0</td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class="day-cell" style="background:#111;color:#fff;opacity:0.25;"></td><td class='num week-total'>0</td><td class='num'>0</td><td class='num'>0.8</td><td><span style="color:#f59e0b;font-weight:700">BELOW</span></td></tr></tbody></table>
+  <h2>Per-editor pipeline</h2>
+  <table><thead><tr>
+    <th style="text-align:left">Editor</th><th>Approved Queue</th><th>Posted</th><th>Ongoing / QC</th><th>In Correction</th>
+  </tr></thead><tbody>
+  <tr><td class='name'>Abdullah</td><td class='num'>37</td><td class='num'>10</td><td class='num'>13</td><td class='num'>0</td></tr><tr><td class='name'>Thomas</td><td class='num'>9</td><td class='num'>17</td><td class='num'>9</td><td class='num'>0</td></tr><tr><td class='name'>Bilal</td><td class='num'>20</td><td class='num'>3</td><td class='num'>4</td><td class='num'>4</td></tr><tr><td class='name'>Dhruv</td><td class='num'>12</td><td class='num'>10</td><td class='num'>2</td><td class='num'>2</td></tr><tr><td class='name'>Jhully</td><td class='num'>8</td><td class='num'>5</td><td class='num'>6</td><td class='num'>0</td></tr>
+  </tbody></table>
+</div>
+
+<!-- ═══ THIS MONTH ═══ -->
+<div id="panel-month" class="panel">
+  <h2>May 2026 — Clips Approved Per Editor</h2>
+  <p style="color:#888;font-size:13px;margin-bottom:16px">When each editor's clip first passed Sahan's QC. Resets June 1.</p>
+  <table><thead><tr>
+    <th style="text-align:left">Editor</th><th>Clips Approved</th>
+    <th style="text-align:left;padding-left:12px">vs target</th><th>%</th><th>Posted</th>
+  </tr></thead><tbody><tr><td class='name'>Abdullah</td><td class='num' style='font-size:20px;font-weight:800'>0</td><td><div style='height:10px;width:0px;background:#22c55e;border-radius:2px;display:inline-block'></div></td><td class='num' style='color:#ef4444'>0%</td><td class='num'>10</td></tr>
+<tr><td class='name'>Thomas</td><td class='num' style='font-size:20px;font-weight:800'>0</td><td><div style='height:10px;width:0px;background:#22c55e;border-radius:2px;display:inline-block'></div></td><td class='num' style='color:#ef4444'>0%</td><td class='num'>17</td></tr>
+<tr><td class='name'>Bilal</td><td class='num' style='font-size:20px;font-weight:800'>0</td><td><div style='height:10px;width:0px;background:#22c55e;border-radius:2px;display:inline-block'></div></td><td class='num' style='color:#ef4444'>0%</td><td class='num'>3</td></tr>
+<tr><td class='name'>Dhruv</td><td class='num' style='font-size:20px;font-weight:800'>0</td><td><div style='height:10px;width:0px;background:#22c55e;border-radius:2px;display:inline-block'></div></td><td class='num' style='color:#ef4444'>0%</td><td class='num'>10</td></tr>
+<tr><td class='name'>Jhully</td><td class='num' style='font-size:20px;font-weight:800'>0</td><td><div style='height:10px;width:0px;background:#22c55e;border-radius:2px;display:inline-block'></div></td><td class='num' style='color:#ef4444'>0%</td><td class='num'>5</td></tr></tbody></table>
+  <p style="color:#555;font-size:12px;margin-top:12px">Target: 2/day × 1 days = 2 per editor</p>
+  <div class="summary" style="margin-top:24px">
+    <div class="metric"><div class="value">0</div><div class="label">Team total approved in May</div></div>
+    <div class="metric"><div class="value">0.0</div><div class="label">Team clips/day avg</div></div>
+    <div class="metric"><div class="value">Abdullah</div><div class="label">Top editor this month</div></div>
+  </div>
+</div>
+
+
+<!-- ═══ REPORT CARD ═══ -->
+<div id="panel-report" class="panel">
+  <h2>Editor Quality Report Card</h2>
+  <p style="color:#888;font-size:13px;margin-bottom:16px">Quality Score = 70% first-pass rate + 30% low revision rate. Higher is better. Answers "who are our best editors?"</p>
+  <table><thead><tr>
+    <th style="width:40px">#</th><th style="text-align:left">Editor</th>
+    <th>Total Submitted</th><th>First-Pass Rate</th><th>Avg Revisions</th><th>Stuck in Correction</th><th>Quality Score</th>
+  </tr></thead><tbody><tr><td class='rank'>🥇</td><td class='name'>Thomas</td><td class='num'>25</td><td class='num' style='color:#ef4444;font-weight:700'>40%</td><td class='num'>0.6</td><td class='num' style='color:#f59e0b'>0</td><td class='num' style='color:#f59e0b;font-weight:800;font-size:16px'>54</td></tr>
+<tr><td class='rank'>🥈</td><td class='name'>Jhully</td><td class='num'>13</td><td class='num' style='color:#ef4444;font-weight:700'>31%</td><td class='num'>0.8</td><td class='num' style='color:#f59e0b'>0</td><td class='num' style='color:#ef4444;font-weight:800;font-size:16px'>47</td></tr>
+<tr><td class='rank'>🥉</td><td class='name'>Abdullah</td><td class='num'>54</td><td class='num' style='color:#ef4444;font-weight:700'>28%</td><td class='num'>1.2</td><td class='num' style='color:#f59e0b'>0</td><td class='num' style='color:#ef4444;font-weight:800;font-size:16px'>42</td></tr>
+<tr><td class='rank'>4</td><td class='name'>Bilal</td><td class='num'>23</td><td class='num' style='color:#ef4444;font-weight:700'>13%</td><td class='num'>2.0</td><td class='num' style='color:#f59e0b'>4</td><td class='num' style='color:#ef4444;font-weight:800;font-size:16px'>27</td></tr>
+<tr><td class='rank'>5</td><td class='name'>Dhruv</td><td class='num'>16</td><td class='num' style='color:#ef4444;font-weight:700'>0%</td><td class='num'>2.2</td><td class='num' style='color:#f59e0b'>2</td><td class='num' style='color:#ef4444;font-weight:800;font-size:16px'>17</td></tr></tbody></table>
+  <div style="background:#141414;border:1px solid #222;border-radius:8px;padding:16px;margin-top:24px;font-size:13px;color:#888">
+    <strong style="color:#ccc">How to read this:</strong><br>
+    <b>First-Pass Rate</b> — % of clips approved on first QC attempt (no corrections). Higher = better quality, less of Sahan's time.<br>
+    <b>Avg Revisions</b> — times Sahan sent a clip back before approving. Target: &lt;1.5<br>
+    <b>Quality Score</b> — composite score. 70+ = strong · 50–70 = developing · &lt;50 = needs coaching
+  </div>
+  <h2 style="margin-top:32px">Editor check-in messages</h2>
+  <p style="color:#888;font-size:13px;margin-bottom:16px">Auto-drafted for editors who are below pace, have low quality scores, or are stuck in correction. Click to copy and send directly.</p>
+  <div style="background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:16px;margin-bottom:12px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+    <div>
+      <span style="font-weight:700;font-size:15px">Abdullah</span>
+      <span style="color:#555;font-size:13px;margin-left:10px"><span style='color:#f59e0b'>quality score 42/100</span></span>
+    </div>
+    <button onclick="copyMsg('msg-0')" style="background:#1e3a5f;color:#93c5fd;border:1px solid #2a4a7f;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;white-space:nowrap">Copy message</button>
+  </div>
+  <div id="msg-0" style="background:#0d0d0d;border-radius:6px;padding:12px;font-size:13px;color:#ccc;line-height:1.6;white-space:pre-wrap">Hey Abdullah — quick check-in. I noticed quality score 42/100. What's your biggest bottleneck right now? And what can I do on my end to make things smoother for you? Genuinely want to make sure you have everything you need.</div>
+</div>
+<div style="background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:16px;margin-bottom:12px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+    <div>
+      <span style="font-weight:700;font-size:15px">Thomas</span>
+      <span style="color:#555;font-size:13px;margin-left:10px"><span style='color:#f59e0b'>quality score 54/100</span></span>
+    </div>
+    <button onclick="copyMsg('msg-1')" style="background:#1e3a5f;color:#93c5fd;border:1px solid #2a4a7f;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;white-space:nowrap">Copy message</button>
+  </div>
+  <div id="msg-1" style="background:#0d0d0d;border-radius:6px;padding:12px;font-size:13px;color:#ccc;line-height:1.6;white-space:pre-wrap">Hey Thomas — quick check-in. I noticed quality score 54/100. What's your biggest bottleneck right now? And what can I do on my end to make things smoother for you? Genuinely want to make sure you have everything you need.</div>
+</div>
+<div style="background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:16px;margin-bottom:12px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+    <div>
+      <span style="font-weight:700;font-size:15px">Bilal</span>
+      <span style="color:#555;font-size:13px;margin-left:10px"><span style='color:#f59e0b'>quality score 27/100</span> · <span style='color:#f59e0b'>4 clip(s) stuck in correction</span></span>
+    </div>
+    <button onclick="copyMsg('msg-2')" style="background:#1e3a5f;color:#93c5fd;border:1px solid #2a4a7f;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;white-space:nowrap">Copy message</button>
+  </div>
+  <div id="msg-2" style="background:#0d0d0d;border-radius:6px;padding:12px;font-size:13px;color:#ccc;line-height:1.6;white-space:pre-wrap">Hey Bilal — quick check-in. I noticed quality score 27/100, 4 clip(s) stuck in correction. What's your biggest bottleneck right now? And what can I do on my end to make things smoother for you? Genuinely want to make sure you have everything you need.</div>
+</div>
+<div style="background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:16px;margin-bottom:12px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+    <div>
+      <span style="font-weight:700;font-size:15px">Dhruv</span>
+      <span style="color:#555;font-size:13px;margin-left:10px"><span style='color:#f59e0b'>quality score 17/100</span> · <span style='color:#f59e0b'>2 clip(s) stuck in correction</span></span>
+    </div>
+    <button onclick="copyMsg('msg-3')" style="background:#1e3a5f;color:#93c5fd;border:1px solid #2a4a7f;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;white-space:nowrap">Copy message</button>
+  </div>
+  <div id="msg-3" style="background:#0d0d0d;border-radius:6px;padding:12px;font-size:13px;color:#ccc;line-height:1.6;white-space:pre-wrap">Hey Dhruv — quick check-in. I noticed quality score 17/100, 2 clip(s) stuck in correction. What's your biggest bottleneck right now? And what can I do on my end to make things smoother for you? Genuinely want to make sure you have everything you need.</div>
+</div>
+<div style="background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:16px;margin-bottom:12px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+    <div>
+      <span style="font-weight:700;font-size:15px">Jhully</span>
+      <span style="color:#555;font-size:13px;margin-left:10px"><span style='color:#f59e0b'>quality score 47/100</span></span>
+    </div>
+    <button onclick="copyMsg('msg-4')" style="background:#1e3a5f;color:#93c5fd;border:1px solid #2a4a7f;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;white-space:nowrap">Copy message</button>
+  </div>
+  <div id="msg-4" style="background:#0d0d0d;border-radius:6px;padding:12px;font-size:13px;color:#ccc;line-height:1.6;white-space:pre-wrap">Hey Jhully — quick check-in. I noticed quality score 47/100. What's your biggest bottleneck right now? And what can I do on my end to make things smoother for you? Genuinely want to make sure you have everything you need.</div>
+</div>
+</div>
+
+<!-- ═══ CONTENT RUNWAY ═══ -->
+<div id="panel-runway" class="panel">
+  <h2>Content Runway — days of approved content remaining</h2>
+  <p style="color:#888;font-size:13px;margin-bottom:20px">Based on approved clips in queue ÷ daily posting rate. Green = 14d+, Yellow = 7–14d, Red = under 7d.</p>
+  <div style="background:#141414;border:1px solid #222;border-radius:10px;padding:20px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+        <span style="font-weight:700;font-size:15px">Articulate Channel</span>
+        <span style="font-size:28px;font-weight:800;color:#c084fc">14d</span>
+        <span style="color:#22c55e;font-weight:700;font-size:13px">HEALTHY</span>
+      </div>
+      <div style="background:#222;border-radius:4px;height:12px">
+        <div style="background:#c084fc;width:46.666666666666664%;height:100%;border-radius:4px;transition:width 0.3s"></div>
+      </div>
+      <div style="color:#555;font-size:12px;margin-top:6px">at 3 clips/day posting rate</div>
+    </div>
+  <div style="background:#141414;border:1px solid #222;border-radius:10px;padding:20px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+        <span style="font-weight:700;font-size:15px">Sam (Main Channel)</span>
+        <span style="font-size:28px;font-weight:800;color:#4ade80">24d</span>
+        <span style="color:#22c55e;font-weight:700;font-size:13px">HEALTHY</span>
+      </div>
+      <div style="background:#222;border-radius:4px;height:12px">
+        <div style="background:#4ade80;width:80.0%;height:100%;border-radius:4px;transition:width 0.3s"></div>
+      </div>
+      <div style="color:#555;font-size:12px;margin-top:6px">at 2 clips/day posting rate</div>
+    </div>
+  <div style="background:#141414;border:1px solid #222;border-radius:10px;padding:20px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+        <span style="font-weight:700;font-size:15px">Total Combined</span>
+        <span style="font-size:28px;font-weight:800;color:#3b82f6">18d</span>
+        <span style="color:#22c55e;font-weight:700;font-size:13px">HEALTHY</span>
+      </div>
+      <div style="background:#222;border-radius:4px;height:12px">
+        <div style="background:#3b82f6;width:60.0%;height:100%;border-radius:4px;transition:width 0.3s"></div>
+      </div>
+      <div style="color:#555;font-size:12px;margin-top:6px">at 2 clips/day posting rate</div>
+    </div>
+  <div class="summary" style="margin-top:24px">
+    <div class="metric"><div class="value">43</div><div class="label">Articulate approved clips</div><div class="sub">posting 3/day</div></div>
+    <div class="metric"><div class="value">48</div><div class="label">Sam approved clips</div><div class="sub">posting 2/day</div></div>
+    <div class="metric"><div class="value">91</div><div class="label">Total approved queue</div><div class="sub">across both channels</div></div>
+  </div>
+  <p style="color:#555;font-size:12px;margin-top:8px">To update posting rates, edit ART_DAILY_RATE and SAM_DAILY_RATE at the top of the build script.</p>
+</div>
+
+<!-- ═══ TRENDS ═══ -->
+<div id="panel-trends" class="panel">
+  <h2>4-Week Delivery Trend</h2>
+  <p style="color:#888;font-size:13px;margin-bottom:16px">Clips delivered to QC per editor per week. Arrow shows this week vs last week. ↑ improving · ↓ declining · → stable.</p>
+  <table><thead><tr>
+    <th style="text-align:left">Editor</th><th>May 10–16</th><th>May 17–23</th><th>May 24–30</th><th>May 31–6</th><th style="text-align:left">Trend</th>
+  </tr></thead><tbody><tr><td class='name'>Abdullah</td><td class='num'>10</td><td class='num'>15</td><td class='num'>21</td><td class='num'>0</td><td style='vertical-align:middle'><div style='display:flex;align-items:center'><div style="display:flex;align-items:flex-end;gap:3px;height:40px;background:#0a0a0a;padding:4px;border-radius:4px;width:140px"><div class='spark-bar' style='height:48%;background:#3b82f6'></div><div class='spark-bar' style='height:71%;background:#3b82f6'></div><div class='spark-bar' style='height:100%;background:#22c55e'></div><div class='spark-bar' style='height:4%;background:#222'></div></div><span style="color:#ef4444;font-weight:700;font-size:16px;margin-left:8px">↓</span></div></td></tr>
+<tr><td class='name'>Thomas</td><td class='num'>3</td><td class='num'>6</td><td class='num'>10</td><td class='num'>1</td><td style='vertical-align:middle'><div style='display:flex;align-items:center'><div style="display:flex;align-items:flex-end;gap:3px;height:40px;background:#0a0a0a;padding:4px;border-radius:4px;width:140px"><div class='spark-bar' style='height:30%;background:#3b82f6'></div><div class='spark-bar' style='height:60%;background:#3b82f6'></div><div class='spark-bar' style='height:100%;background:#22c55e'></div><div class='spark-bar' style='height:10%;background:#3b82f6'></div></div><span style="color:#ef4444;font-weight:700;font-size:16px;margin-left:8px">↓</span></div></td></tr>
+<tr><td class='name'>Bilal</td><td class='num'>6</td><td class='num'>5</td><td class='num'>3</td><td class='num'>0</td><td style='vertical-align:middle'><div style='display:flex;align-items:center'><div style="display:flex;align-items:flex-end;gap:3px;height:40px;background:#0a0a0a;padding:4px;border-radius:4px;width:140px"><div class='spark-bar' style='height:100%;background:#22c55e'></div><div class='spark-bar' style='height:83%;background:#3b82f6'></div><div class='spark-bar' style='height:50%;background:#3b82f6'></div><div class='spark-bar' style='height:4%;background:#222'></div></div><span style="color:#ef4444;font-weight:700;font-size:16px;margin-left:8px">↓</span></div></td></tr>
+<tr><td class='name'>Dhruv</td><td class='num'>4</td><td class='num'>3</td><td class='num'>2</td><td class='num'>2</td><td style='vertical-align:middle'><div style='display:flex;align-items:center'><div style="display:flex;align-items:flex-end;gap:3px;height:40px;background:#0a0a0a;padding:4px;border-radius:4px;width:140px"><div class='spark-bar' style='height:100%;background:#22c55e'></div><div class='spark-bar' style='height:75%;background:#3b82f6'></div><div class='spark-bar' style='height:50%;background:#3b82f6'></div><div class='spark-bar' style='height:50%;background:#3b82f6'></div></div><span style="color:#888;font-weight:700;font-size:16px;margin-left:8px">→</span></div></td></tr>
+<tr><td class='name'>Jhully</td><td class='num'>0</td><td class='num'>9</td><td class='num'>4</td><td class='num'>0</td><td style='vertical-align:middle'><div style='display:flex;align-items:center'><div style="display:flex;align-items:flex-end;gap:3px;height:40px;background:#0a0a0a;padding:4px;border-radius:4px;width:140px"><div class='spark-bar' style='height:4%;background:#222'></div><div class='spark-bar' style='height:100%;background:#22c55e'></div><div class='spark-bar' style='height:44%;background:#3b82f6'></div><div class='spark-bar' style='height:4%;background:#222'></div></div><span style="color:#ef4444;font-weight:700;font-size:16px;margin-left:8px">↓</span></div></td></tr>
+<tr style='border-top:2px solid #333'><td class='name' style='color:#888'>TEAM</td><td class='num' style='font-weight:800'>23</td><td class='num' style='font-weight:800'>38</td><td class='num' style='font-weight:800'>40</td><td class='num' style='font-weight:800'>3</td><td style='vertical-align:middle'><div style='display:flex;align-items:center'><div style="display:flex;align-items:flex-end;gap:3px;height:40px;background:#0a0a0a;padding:4px;border-radius:4px;width:140px"><div class='spark-bar' style='height:57%;background:#3b82f6'></div><div class='spark-bar' style='height:95%;background:#3b82f6'></div><div class='spark-bar' style='height:100%;background:#22c55e'></div><div class='spark-bar' style='height:8%;background:#3b82f6'></div></div><span style="color:#ef4444;font-weight:700;font-size:16px;margin-left:8px">↓</span></div></td></tr></tbody></table>
+</div>
+
+<!-- ═══ PAY CALCULATOR ═══ -->
+<div id="panel-pay" class="panel">
+  <div style="background:#0f1a0f;border:1px solid #1a3a1a;border-radius:8px;padding:12px 16px;font-size:13px;color:#86efac;margin-bottom:20px">
+    Counting posted clips after trial period cutoff: <strong>May 12, 2026</strong>.
+    To change this, update <code>TRIAL_END</code> in the build script.
+  </div>
+  <h2>Pay Calculator — Posted Clips by Channel</h2>
+  <p style="color:#888;font-size:13px;margin-bottom:16px">Based on clips actually posted (live on platforms) after the 2-week trial. $20/clip across all editors.</p>
+  <table><thead><tr>
+    <th style="text-align:left">Editor</th>
+    <th>Rate</th>
+    <th style="color:#c084fc">Articulate Posted</th>
+    <th style="color:#c084fc">Articulate Pay</th>
+    <th style="color:#4ade80">Sam Posted</th>
+    <th style="color:#4ade80">Sam Pay</th>
+    <th>Total Clips</th>
+    <th>Total Owed</th>
+  </tr></thead><tbody><tr><td class='name'>Thomas</td><td class='num'>$20/clip</td><td class='num'>1</td><td class='num' style='color:#c084fc;font-weight:700'>$20</td><td class='num'>11</td><td class='num' style='color:#4ade80;font-weight:700'>$220</td><td class='num' style='font-weight:800;font-size:15px'>12</td><td class='num copyable' title='Click to copy' data-copy='Thomas: $240 (12 clips)' style='color:#22c55e;font-weight:800;font-size:15px'>$240</td></tr>
+<tr><td class='name'>Dhruv</td><td class='num'>$20/clip</td><td class='num'>9</td><td class='num' style='color:#c084fc;font-weight:700'>$180</td><td class='num'>0</td><td class='num' style='color:#4ade80;font-weight:700'>$0</td><td class='num' style='font-weight:800;font-size:15px'>9</td><td class='num copyable' title='Click to copy' data-copy='Dhruv: $180 (9 clips)' style='color:#22c55e;font-weight:800;font-size:15px'>$180</td></tr>
+<tr><td class='name'>Jhully</td><td class='num'>$20/clip</td><td class='num'>1</td><td class='num' style='color:#c084fc;font-weight:700'>$20</td><td class='num'>5</td><td class='num' style='color:#4ade80;font-weight:700'>$100</td><td class='num' style='font-weight:800;font-size:15px'>6</td><td class='num copyable' title='Click to copy' data-copy='Jhully: $120 (6 clips)' style='color:#22c55e;font-weight:800;font-size:15px'>$120</td></tr>
+<tr><td class='name'>Abdullah</td><td class='num'>$20/clip</td><td class='num'>0</td><td class='num' style='color:#c084fc;font-weight:700'>$0</td><td class='num'>5</td><td class='num' style='color:#4ade80;font-weight:700'>$100</td><td class='num' style='font-weight:800;font-size:15px'>5</td><td class='num copyable' title='Click to copy' data-copy='Abdullah: $100 (5 clips)' style='color:#22c55e;font-weight:800;font-size:15px'>$100</td></tr>
+<tr><td class='name'>Bilal</td><td class='num'>$20/clip</td><td class='num'>3</td><td class='num' style='color:#c084fc;font-weight:700'>$60</td><td class='num'>0</td><td class='num' style='color:#4ade80;font-weight:700'>$0</td><td class='num' style='font-weight:800;font-size:15px'>3</td><td class='num copyable' title='Click to copy' data-copy='Bilal: $60 (3 clips)' style='color:#22c55e;font-weight:800;font-size:15px'>$60</td></tr>
+<tr style='border-top:2px solid #333;background:#1a1a1a'><td class='name' style='color:#888'>TEAM TOTAL</td><td></td><td class='num' style='font-weight:800'>14</td><td class='num' style='color:#c084fc;font-weight:800'>$280</td><td class='num' style='font-weight:800'>21</td><td class='num' style='color:#4ade80;font-weight:800'>$420</td><td class='num' style='font-weight:800'>35</td><td class='num' style='color:#22c55e;font-weight:800'>$700</td></tr></tbody></table>
+  <div class="summary" style="margin-top:24px">
+    <div class="metric"><div class="value">14</div><div class="label">Articulate clips posted</div><div class="sub">after trial cutoff</div></div>
+    <div class="metric"><div class="value">21</div><div class="label">Sam clips posted</div><div class="sub">after trial cutoff</div></div>
+    <div class="metric"><div class="value">35</div><div class="label">Total clips posted</div></div>
+    <div class="metric"><div class="value" style="color:#22c55e">$700</div><div class="label">Total team owed</div></div>
+  </div>
+</div>
+
+<!-- ═══ ARTICULATE ═══ -->
+<div id="panel-art" class="panel">
+  <h2>Articulate Channel</h2>
+  <table><thead><tr>
+    <th style="text-align:left">Editor</th><th>In Approved Queue</th><th>Posted</th><th>Avg Revisions</th>
+  </tr></thead><tbody>
+  <tr><td class='name'>Abdullah</td><td class='num'>7</td><td class='num'>6</td><td class='num'>1.2</td></tr><tr><td class='name'>Thomas</td><td class='num'>1</td><td class='num'>1</td><td class='num'>0.6</td></tr><tr><td class='name'>Bilal</td><td class='num'>18</td><td class='num'>3</td><td class='num'>2.0</td></tr><tr><td class='name'>Dhruv</td><td class='num'>12</td><td class='num'>10</td><td class='num'>2.2</td></tr><tr><td class='name'>Jhully</td><td class='num'>0</td><td class='num'>0</td><td class='num'>0.8</td></tr>
+  </tbody></table>
+</div>
+
+<!-- ═══ SAM MAIN ═══ -->
+<div id="panel-sam" class="panel">
+  <h2>Sam (Main Channel)</h2>
+  <p style="color:#888;font-size:13px;margin-bottom:16px">Thomas and Jhully are primary editors. Sahan handles QC.</p>
+  <table><thead><tr>
+    <th style="text-align:left">Editor</th><th>In Approved Queue</th><th>Posted</th><th>Avg Revisions</th>
+  </tr></thead><tbody>
+  <tr><td class='name'>Abdullah</td><td class='num'>30</td><td class='num'>4</td><td class='num'>1.2</td></tr><tr><td class='name'>Thomas</td><td class='num'>8</td><td class='num'>16</td><td class='num'>0.6</td></tr><tr><td class='name'>Bilal</td><td class='num'>2</td><td class='num'>0</td><td class='num'>2.0</td></tr><tr><td class='name'>Dhruv</td><td class='num'>0</td><td class='num'>0</td><td class='num'>2.2</td></tr><tr><td class='name'>Jhully</td><td class='num'>8</td><td class='num'>5</td><td class='num'>0.8</td></tr>
+  </tbody></table>
+</div>
+
+<footer>Sam X Articulate · Editor Dashboard · <span id="live-time-footer"></span> · Trello API · press <kbd>?</kbd> for shortcuts</footer>
+
+<div class="toast-wrap" id="toasts"></div>
+<div class="kbd-overlay" id="kbd" onclick="if(event.target===this)toggleHelp()">
+  <div class="kbd-card">
+    <h3>⌨ Keyboard shortcuts</h3>
+    <div class="kbd-row"><span>Switch tab</span><span><kbd>1</kbd> … <kbd>9</kbd></span></div>
+    <div class="kbd-row"><span>Filter editors</span><kbd>/</kbd></div>
+    <div class="kbd-row"><span>Refresh now</span><kbd>r</kbd></div>
+    <div class="kbd-row"><span>Toggle desktop alerts</span><kbd>n</kbd></div>
+    <div class="kbd-row"><span>Toggle sound alerts</span><kbd>m</kbd></div>
+    <div class="kbd-row"><span>Show this help</span><kbd>?</kbd></div>
+    <div class="kbd-row" style="border:none"><span>Close</span><kbd>Esc</kbd></div>
+  </div>
+</div>
+
+<script>
+const DATA = {"buildEpoch": 1780339498.537133, "rebuildInterval": 300, "alerts": [{"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/vUNtHsME", "text": "\u201cA5 - The most fulfilling feeling in the world is\u201d has waited 106h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/vUNtHsME"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/3a3FIWq5", "text": "\u201cArticulate 04- Lakshya - What's your worst date \u201d has waited 98h for QC (unassigned)", "tab": "qc", "url": "https://trello.com/c/3a3FIWq5"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/FpQrGXph", "text": "\u201cB11 - I own the whole 4U page\u201d has waited 95h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/FpQrGXph"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/ODY1Gvz9", "text": "\u201cA5 - I got a pretty sick car for us\u201d has waited 95h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/ODY1Gvz9"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/dHWXRoa1", "text": "\u201cB5 - If you're going to set up a company in a wa\u201d has waited 95h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/dHWXRoa1"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/VaqhkrM1", "text": "\u201cB3 - No city is good for low cars\u201d has waited 93h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/VaqhkrM1"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/vkk78P47", "text": "\u201c\"Every millionaire began with a blurry dream\"\u201d has waited 90h for QC (Jhully)", "tab": "qc", "url": "https://trello.com/c/vkk78P47"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/mvVBBpv9", "text": "\u201cA12 - That is a 98 percent click through rate\u201d has waited 89h for QC (Thomas)", "tab": "qc", "url": "https://trello.com/c/mvVBBpv9"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/paPXEmAX", "text": "\u201cA2 - Why are you not confident when you speak?\u201d has waited 67h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/paPXEmAX"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/NgcMAhFL", "text": "\u201cA2 - I hope my future wife does not see this\u201d has waited 61h for QC (Thomas)", "tab": "qc", "url": "https://trello.com/c/NgcMAhFL"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/6oyFJXg5", "text": "\u201cA4 - Life is truly coming together\u201d has waited 55h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/6oyFJXg5"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/j4I5A4Oh", "text": "\u201cB3 - This laser is going to kill the bacteria fr\u201d has waited 54h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/j4I5A4Oh"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/53Ze4hkQ", "text": "\u201cA5 - Every time I thought about something way to\u201d has waited 54h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/53Ze4hkQ"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/ettBFWRV", "text": "\u201c''Winning''\u201d has waited 52h for QC (Jhully)", "tab": "qc", "url": "https://trello.com/c/ettBFWRV"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/cmZtPrgX", "text": "\u201cA5 - This is the first time you guys are seeing \u201d has waited 45h for QC (Thomas)", "tab": "qc", "url": "https://trello.com/c/cmZtPrgX"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/tu15LKPh", "text": "\u201cA8 - I have, I have zero sex drive\u2026 I'm getting \u201d has waited 38h for QC (Bilal)", "tab": "qc", "url": "https://trello.com/c/tu15LKPh"}, {"sev": "yellow", "icon": "\ud83d\udd0d", "key": "qcbacklog:19", "text": "QC backlog building \u2014 19 cards waiting on Sahan", "tab": "qc", "url": ""}, {"sev": "yellow", "icon": "\u270f\ufe0f", "key": "stuck:6:Bilal,Dhruv", "text": "6 clip(s) stuck in Correction \u2014 Bilal (4), Dhruv (2)", "tab": "report", "url": ""}], "notify": [{"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/vUNtHsME", "text": "\u201cA5 - The most fulfilling feeling in the world is\u201d has waited 106h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/vUNtHsME"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/3a3FIWq5", "text": "\u201cArticulate 04- Lakshya - What's your worst date \u201d has waited 98h for QC (unassigned)", "tab": "qc", "url": "https://trello.com/c/3a3FIWq5"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/FpQrGXph", "text": "\u201cB11 - I own the whole 4U page\u201d has waited 95h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/FpQrGXph"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/ODY1Gvz9", "text": "\u201cA5 - I got a pretty sick car for us\u201d has waited 95h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/ODY1Gvz9"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/dHWXRoa1", "text": "\u201cB5 - If you're going to set up a company in a wa\u201d has waited 95h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/dHWXRoa1"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/VaqhkrM1", "text": "\u201cB3 - No city is good for low cars\u201d has waited 93h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/VaqhkrM1"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/vkk78P47", "text": "\u201c\"Every millionaire began with a blurry dream\"\u201d has waited 90h for QC (Jhully)", "tab": "qc", "url": "https://trello.com/c/vkk78P47"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/mvVBBpv9", "text": "\u201cA12 - That is a 98 percent click through rate\u201d has waited 89h for QC (Thomas)", "tab": "qc", "url": "https://trello.com/c/mvVBBpv9"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/paPXEmAX", "text": "\u201cA2 - Why are you not confident when you speak?\u201d has waited 67h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/paPXEmAX"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/NgcMAhFL", "text": "\u201cA2 - I hope my future wife does not see this\u201d has waited 61h for QC (Thomas)", "tab": "qc", "url": "https://trello.com/c/NgcMAhFL"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/6oyFJXg5", "text": "\u201cA4 - Life is truly coming together\u201d has waited 55h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/6oyFJXg5"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/j4I5A4Oh", "text": "\u201cB3 - This laser is going to kill the bacteria fr\u201d has waited 54h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/j4I5A4Oh"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/53Ze4hkQ", "text": "\u201cA5 - Every time I thought about something way to\u201d has waited 54h for QC (Abdullah)", "tab": "qc", "url": "https://trello.com/c/53Ze4hkQ"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/ettBFWRV", "text": "\u201c''Winning''\u201d has waited 52h for QC (Jhully)", "tab": "qc", "url": "https://trello.com/c/ettBFWRV"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/cmZtPrgX", "text": "\u201cA5 - This is the first time you guys are seeing \u201d has waited 45h for QC (Thomas)", "tab": "qc", "url": "https://trello.com/c/cmZtPrgX"}, {"sev": "red", "icon": "\u23f0", "key": "qc:https://trello.com/c/tu15LKPh", "text": "\u201cA8 - I have, I have zero sex drive\u2026 I'm getting \u201d has waited 38h for QC (Bilal)", "tab": "qc", "url": "https://trello.com/c/tu15LKPh"}], "qcCount": 19, "teamWeek": 3, "boardUrl": "https://trello.com/b/69ef4125e100f5ef226e2311", "qcSession": [{"name": "Locked in - Sam zia gets arrested", "card": "https://trello.com/c/AB8alQ12", "links": ["https://f.io/CrCXEhy0"], "editors": ["Thomas"]}, {"name": "Articulate 04- Lakshya - What's your worst date experience?", "card": "https://trello.com/c/3a3FIWq5", "links": [], "editors": []}, {"name": "Cake by the ocean", "card": "https://trello.com/c/wu18BMgM", "links": ["https://f.io/4TWhOmIK"], "editors": ["Jhully"]}, {"name": "A2 - I hope my future wife does not see this", "card": "https://trello.com/c/NgcMAhFL", "links": ["https://f.io/VcuE7RSA", "https://f.io/VLJ4islu", "https://f.io/9PyPPy6r"], "editors": ["Thomas"]}, {"name": "''Winning''", "card": "https://trello.com/c/ettBFWRV", "links": ["https://f.io/Q6LWEgTi"], "editors": ["Jhully"]}, {"name": "\"Plan A\"", "card": "https://trello.com/c/Uhq7EeA3", "links": ["https://f.io/QXUxssOa"], "editors": ["Jhully"]}, {"name": "all a man needs to be happy", "card": "https://trello.com/c/urdiihHy", "links": ["https://f.io/dUME-WgK", "https://f.io/9ZhbyAXp"], "editors": ["Thomas"]}, {"name": "A5 - This is the first time you guys are seeing the crib", "card": "https://trello.com/c/cmZtPrgX", "links": ["https://f.io/tx9AQQwP", "https://f.io/F-DZBw-7"], "editors": ["Thomas"]}, {"name": "B3 - This laser is going to kill the bacteria from within", "card": "https://trello.com/c/j4I5A4Oh", "links": ["https://f.io/FuFcDhZq", "https://f.io/leJX8Bdm"], "editors": ["Abdullah"]}, {"name": "A5 - Every time I thought about something way too much, I fucked it up", "card": "https://trello.com/c/53Ze4hkQ", "links": ["https://f.io/GO6Pq7Ei", "https://f.io/dtFDIEhi"], "editors": ["Abdullah"]}, {"name": "A4 - Life is truly coming together", "card": "https://trello.com/c/6oyFJXg5", "links": ["https://f.io/ydWGC5fP", "https://f.io/TqrHqykh"], "editors": ["Abdullah"]}, {"name": "A2 - Why are you not confident when you speak?", "card": "https://trello.com/c/paPXEmAX", "links": ["https://f.io/bcTQRpin", "https://f.io/lKSo71zR"], "editors": ["Abdullah"]}, {"name": "A12 - That is a 98 percent click through rate", "card": "https://trello.com/c/mvVBBpv9", "links": ["https://f.io/eEr7-X6x", "https://f.io/gqkprRGd"], "editors": ["Thomas"]}, {"name": "\"Every millionaire began with a blurry dream\"", "card": "https://trello.com/c/vkk78P47", "links": ["https://f.io/tyQkbKuF"], "editors": ["Jhully"]}, {"name": "''Fail'", "card": "https://trello.com/c/wpHK86it", "links": ["https://f.io/eZJMqT0l"], "editors": ["Jhully"]}, {"name": "B3 - No city is good for low cars", "card": "https://trello.com/c/VaqhkrM1", "links": ["https://f.io/pvKTEgGx"], "editors": ["Abdullah"]}, {"name": "A5 - I got a pretty sick car for us", "card": "https://trello.com/c/ODY1Gvz9", "links": ["https://f.io/Tfky-gs7"], "editors": ["Abdullah"]}, {"name": "B5 - If you're going to set up a company in a way where you're going to sell it", "card": "https://trello.com/c/dHWXRoa1", "links": ["https://f.io/TaALcZQn", "https://f.io/2dcvYTs3"], "editors": ["Abdullah"]}, {"name": "B11 - I own the whole 4U page", "card": "https://trello.com/c/FpQrGXph", "links": ["https://f.io/P5P7hd9d"], "editors": ["Abdullah"]}, {"name": "A5 - The most fulfilling feeling in the world is working on a project with a very small group", "card": "https://trello.com/c/vUNtHsME", "links": ["https://f.io/8xK6dt7m"], "editors": ["Abdullah"]}, {"name": "A8 - I have, I have zero sex drive\u2026 I'm getting ridiculously angry, I get really angry very fast.", "card": "https://trello.com/c/tu15LKPh", "links": ["https://f.io/UTbfKWXV"], "editors": ["Bilal"]}, {"name": "Articulate 26 - Dhruv - draft 2", "card": "https://trello.com/c/EiftjDvQ", "links": ["https://f.io/hJomLIgQ", "https://f.io/mLVgmz14"], "editors": ["Dhruv"]}, {"name": "Articulate 25 - Dhruv draft 2", "card": "https://trello.com/c/TNIEDg0T", "links": ["https://f.io/wRJvOTQN", "https://f.io/2HHXtMti"], "editors": ["Dhruv"]}]};
+
+const TABS=['todo','week','month','report','runway','trends','pay','art','sam'];
+
+function show(ch){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const pan=document.getElementById('panel-'+ch), tab=document.querySelector('[data-ch="'+ch+'"]');
+  if(pan)pan.classList.add('active'); if(tab)tab.classList.add('active');
+  try{localStorage.setItem('dash.tab',ch);}catch(e){}
+}
+
+function toast(msg,type){
+  const w=document.getElementById('toasts'); if(!w)return;
+  const t=document.createElement('div'); t.className='toast'+(type?(' '+type):'');
+  t.innerHTML='<b>'+(type==='red'?'\u26a0\ufe0f Attention':type==='green'?'\u2713 Done':'Dashboard')+'</b>'+msg;
+  w.appendChild(t);
+  setTimeout(()=>{t.style.transition='opacity .4s';t.style.opacity='0';setTimeout(()=>t.remove(),400);},6000);
+}
+
+function notifOn(){return localStorage.getItem('dash.notif')==='1';}
+function soundOn(){return localStorage.getItem('dash.sound')==='1';}
+function reflectBtns(){
+  const nb=document.getElementById('btn-notif'); if(nb)nb.classList.toggle('on',notifOn());
+  const sb=document.getElementById('btn-sound'); if(sb){sb.classList.toggle('on',soundOn());sb.textContent=soundOn()?'\ud83d\udd0a':'\ud83d\udd07';}
+}
+function toggleNotif(){
+  if(!notifOn()){
+    if(!('Notification' in window)){toast('Notifications not supported here','red');return;}
+    Notification.requestPermission().then(p=>{
+      if(p==='granted'){localStorage.setItem('dash.notif','1');reflectBtns();toast('Desktop alerts ON','green');syncSeen();}
+      else toast('Notification permission denied','red');
+    });
+  }else{localStorage.setItem('dash.notif','0');reflectBtns();toast('Desktop alerts off');}
+}
+function toggleSound(){localStorage.setItem('dash.sound',soundOn()?'0':'1');reflectBtns();toast('Sound alerts '+(soundOn()?'ON':'off'));}
+function beep(){
+  try{
+    const a=new (window.AudioContext||window.webkitAudioContext)();
+    const o=a.createOscillator(),g=a.createGain();
+    o.connect(g);g.connect(a.destination);o.type='sine';o.frequency.value=880;
+    g.gain.setValueAtTime(0.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.18,a.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+0.4);
+    o.start();o.stop(a.currentTime+0.42);
+  }catch(e){}
+}
+function curKeys(){return DATA.notify.map(a=>a.key);}
+function syncSeen(){try{localStorage.setItem('dash.seen',JSON.stringify(curKeys()));}catch(e){}}
+function getDismissed(){try{return JSON.parse(localStorage.getItem('dash.dismissed')||'[]');}catch(e){return[];}}
+function clearAlerts(){
+  const keys=DATA.alerts.map(a=>a.key);
+  localStorage.setItem('dash.dismissed',JSON.stringify(keys));
+  applyDismissed();
+  const det=document.getElementById('attention');if(det)det.removeAttribute('open');
+  toast('Alerts cleared until next refresh','green');
+}
+function applyDismissed(){
+  const dis=getDismissed();
+  document.querySelectorAll('.attn-item[data-key]').forEach(el=>{
+    el.style.display=dis.includes(el.dataset.key)?'none':'';
+  });
+  const list=document.querySelector('.attn-list');
+  if(list){
+    const visible=[...list.querySelectorAll('.attn-item[data-key]')].filter(el=>el.style.display!=='none');
+    let empty=list.querySelector('.attn-dismissed-msg');
+    if(!visible.length){
+      if(!empty){empty=document.createElement('div');empty.className='attn-clear attn-dismissed-msg';empty.textContent='✅ All clear — nothing needs your attention right now.';list.appendChild(empty);}
+    } else {if(empty)empty.remove();}
+  }
+}
+function runNotifs(){
+  let seen=[];try{seen=JSON.parse(localStorage.getItem('dash.seen')||'[]');}catch(e){}
+  const fresh=DATA.notify.filter(a=>seen.indexOf(a.key)<0);
+  syncSeen();
+  if(!fresh.length)return;
+  if(notifOn()&&('Notification' in window)&&Notification.permission==='granted'){
+    fresh.forEach(a=>{
+      const n=new Notification('\u26a0\ufe0f Editor Dashboard',{body:a.text,tag:a.key});
+      n.onclick=()=>{window.focus();if(a.url)window.open(a.url,'_blank');};
+    });
+    if(soundOn())beep();
+  }
+  fresh.forEach(a=>toast(a.text,'red'));
+}
+
+function applyFilter(){
+  const s=document.getElementById('search'); const q=s.value.trim().toLowerCase();
+  document.querySelectorAll('.panel table tbody tr').forEach(tr=>{
+    const nc=tr.querySelector('td.name'); if(!nc)return;
+    const nm=nc.textContent.toLowerCase();
+    const keep=!q||nm.indexOf(q)>=0||nm.indexOf('team')>=0;
+    tr.classList.toggle('row-hidden',!keep);
+  });
+}
+
+document.addEventListener('click',e=>{
+  const c=e.target.closest('.copyable'); if(!c)return;
+  const txt=c.dataset.copy||c.textContent;
+  if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>toast('Copied \u2014 '+txt,'green')).catch(()=>toast('Copy failed','red'));}
+});
+
+function toggleHelp(){const k=document.getElementById('kbd');if(k)k.classList.toggle('show');}
+
+function openQCSession(){
+  const cards=DATA.qcSession||[];
+  if(!cards.length){alert('QC queue is empty — nothing to review!');return;}
+  let opened=0;
+  cards.forEach(c=>{
+    window.open(c.card,'_blank');
+    c.links.forEach(l=>window.open(l,'_blank'));
+    opened+=1+c.links.length;
+  });
+  toast('Opened '+cards.length+' cards and '+cards.reduce((s,c)=>s+c.links.length,0)+' Frame.io links','green');
+}
+
+function copyMsg(id){
+  const el=document.getElementById(id); if(!el)return;
+  const txt=el.innerText;
+  if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>toast('Message copied','green')).catch(()=>{});}
+}
+
+function updateClock(){
+  const now=new Date();
+  const opts={hour:'numeric',minute:'2-digit',hour12:true,weekday:'short',month:'short',day:'numeric',year:'numeric',timeZone:'America/Los_Angeles'};
+  const parts=new Intl.DateTimeFormat('en-US',opts).formatToParts(now);
+  const get=t=>{const p=parts.find(x=>x.type===t);return p?p.value:'';};
+  const str=get('hour')+':'+get('minute')+' '+get('dayPeriod')+' Pacific \u00b7 '+get('weekday')+' '+get('month')+' '+get('day')+' '+get('year');
+  ['live-time','live-time-footer'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=str;});
+}
+
+const buildMs=DATA.buildEpoch*1000;
+function fmtAge(s){if(s<60)return s+'s ago';const m=Math.floor(s/60);return m+'m '+(s%60)+'s ago';}
+function tickFresh(){
+  const age=Math.max(0,Math.floor((Date.now()-buildMs)/1000));
+  const f=document.getElementById('fresh'),txt=document.getElementById('fresh-txt');
+  const stale=age>DATA.rebuildInterval+120;
+  if(f)f.classList.toggle('stale',stale);
+  if(txt)txt.textContent=(stale?'stale \u00b7 ':'updated ')+fmtAge(age);
+  const us=document.getElementById('updated-secs');if(us)us.textContent=age;
+}
+
+function saveState(){try{localStorage.setItem('dash.scroll',String(window.scrollY));}catch(e){}}
+function restoreState(){
+  let tab='week';try{tab=localStorage.getItem('dash.tab')||'week';}catch(e){}
+  if(TABS.indexOf(tab)<0)tab='week';
+  show(tab);
+  try{const y=parseInt(localStorage.getItem('dash.scroll')||'0',10);if(y)window.scrollTo(0,y);}catch(e){}
+}
+let lastAct=Date.now();
+['mousemove','keydown','scroll','click','touchstart','input'].forEach(ev=>addEventListener(ev,()=>{lastAct=Date.now();},{passive:true}));
+const pageLoad=Date.now(), RELOAD_MS=60000, IDLE_MS=12000;
+function canReload(){
+  if(document.hidden)return false;
+  const s=document.getElementById('search');
+  if(s&&(s.value||document.activeElement===s))return false;
+  const k=document.getElementById('kbd'); if(k&&k.classList.contains('show'))return false;
+  if(Date.now()-lastAct<IDLE_MS)return false;
+  return true;
+}
+function manualReload(){saveState();location.reload();}
+setInterval(()=>{if(Date.now()-pageLoad>RELOAD_MS&&canReload()){saveState();location.reload();}},3000);
+addEventListener('beforeunload',saveState);
+
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'){if(e.key==='Escape')e.target.blur();return;}
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key>='1'&&e.key<='9'){const i=+e.key-1;if(TABS[i])show(TABS[i]);}
+  else if(e.key==='/'){e.preventDefault();const s=document.getElementById('search');if(s)s.focus();}
+  else if(e.key==='r')manualReload();
+  else if(e.key==='n')toggleNotif();
+  else if(e.key==='m')toggleSound();
+  else if(e.key==='?')toggleHelp();
+  else if(e.key==='Escape'){const k=document.getElementById('kbd');if(k)k.classList.remove('show');}
+});
+
+(function init(){
+  const s=document.getElementById('search'); if(s)s.addEventListener('input',applyFilter);
+  restoreState(); reflectBtns(); updateClock(); tickFresh(); runNotifs(); applyDismissed();
+  setInterval(updateClock,30000); setInterval(tickFresh,1000);
+})();
+
+</script>
+</body></html>
