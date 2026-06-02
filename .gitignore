@@ -17,3 +17,8 @@ tunnel.log
 
 # Generated assets (keep CSV out since it can change frequently)
 # sam_approved_videos.csv  # uncomment to ignore if it gets stale
+sam_approved_videos.csv
+package.json
+package-lock.json
+netlify.toml
+netlify/
