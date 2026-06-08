@@ -657,12 +657,11 @@ function fmtDate(s){
 
 // ─────────────────────────────────────────────────────────
 // PERSISTENCE — localStorage + GitHub Gist (sync backend for GitHub Pages)
-// Gist: https://gist.github.com/axbpyrc/45553c7b103f68dbc2430b2299826458
-// Reads: work without auth (rate-limited 60/hr per IP).
-// Writes: require a GitHub PAT with `gist` scope, entered once per browser.
+// Gist: https://gist.github.com/32856790235467980256/8e11aed9bf2aa1bdea751246d5d76150
+// Reads + Writes: both require the shared bot PAT (same token for Zain and Sam).
 // ─────────────────────────────────────────────────────────
 const STATE_LS = 'shared_state_v2';
-const GIST_ID  = '45553c7b103f68dbc2430b2299826458';
+const GIST_ID  = '8e11aed9bf2aa1bdea751246d5d76150';
 const GIST_URL = 'https://api.github.com/gists/' + GIST_ID;
 const PAT_LS   = 'shared_gh_pat';
 let lastSyncedModified = 0;
@@ -691,12 +690,8 @@ function ghHeaders(){
 function promptForPat(prefix){
   const cur = ghPat();
   const msg = (prefix ? prefix + '\n\n' : '') +
-    'GitHub Personal Access Token (PAT) needed to save changes.\n\n' +
-    'Get one: https://github.com/settings/personal-access-tokens/new\n' +
-    '  · Repository access: Public Repositories (or no repo access)\n' +
-    '  · Permissions → Account → Gists: Read and Write\n' +
-    '  · Expiration: whatever you want\n\n' +
-    'Stored in this browser only. Each device needs its own.';
+    'Paste the shared bot PAT (same one Sam uses).\n\n' +
+    'Stored in this browser only.';
   const v = window.prompt(msg, cur);
   if(v !== null){
     localStorage.setItem(PAT_LS, v.trim());
@@ -1000,11 +995,11 @@ async function bootstrap(){
   if(!suppressNextSyncUp) syncUp();
 
   // 5. Background sync + time-tick loops
-  // 15s with PAT (auth = 5000/hr limit), 60s without (unauth = 60/hr per IP)
+  // 10s with PAT (auth = 5000/hr limit), 60s without (unauth = 60/hr per IP)
   setInterval(() => {
     if(document.hidden) return;
     syncDown();
-  }, ghPat() ? 15000 : 60000);
+  }, ghPat() ? 10000 : 60000);
   setInterval(periodicTimeCheck, 60000);
   document.addEventListener('visibilitychange', () => {
     if(!document.hidden){ syncDown(); periodicTimeCheck(); }
