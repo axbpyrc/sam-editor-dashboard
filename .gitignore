@@ -10,6 +10,8 @@ node_modules/
 # Logs (runtime, change constantly)
 *.log
 watchdog.state.json
+.watchdog-state
+.card-tags-cache.json
 
 # Old artifacts
 weekly-report.pdf
