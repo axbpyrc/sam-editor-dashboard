@@ -375,6 +375,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     <button class="tab-btn active" data-tab="today" onclick="switchTab('today')">Today</button>
     <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics')">Analytics</button>
     <button class="tab-btn" data-tab="team" onclick="switchTab('team')">Team</button>
+    <button class="tab-btn" data-tab="shorts" onclick="switchTab('shorts')">Shorts</button>
   </div>
 
   <!-- ─── TAB: TODAY ─── -->
@@ -551,6 +552,62 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   </div>
 
   </div><!-- /tab-team -->
+
+  <!-- ─── TAB: SHORTS ─── -->
+  <style>
+    .sr-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+    .sr-status{font-size:11px;color:var(--text2);margin-right:auto}
+    .sr-btn{background:var(--surface3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px 11px;font-size:11px;cursor:pointer}
+    .sr-btn.ghost{background:transparent;color:var(--text2)}
+    .sr-row{background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:12px 14px;margin-bottom:10px}
+    .sr-row-h{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+    .sr-slot{font-size:10px;color:var(--text);font-weight:800;background:var(--surface3);padding:2px 8px;border-radius:20px;white-space:nowrap}
+    .sr-clip{font-size:12px;color:var(--text2);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .sr-clip a{color:var(--text2);text-decoration:none}
+    .sr-clip a:hover{color:var(--blue)}
+    .sr-title-in{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 11px;font-size:14px;font-weight:600;font-family:inherit}
+    .sr-title-in:focus{outline:none;border-color:var(--red)}
+    .sr-alts{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+    .sr-alt{background:var(--surface3);border:1px solid var(--border);color:var(--text2);border-radius:20px;padding:4px 11px;font-size:11px;cursor:pointer}
+    .sr-alt:hover{border-color:var(--red);color:var(--text)}
+    .sr-row-f{display:flex;align-items:center;gap:10px;margin-top:10px}
+    .sr-save{background:var(--red);border:none;color:#fff;border-radius:7px;padding:6px 15px;font-size:11px;font-weight:700;cursor:pointer}
+    .sr-saved{font-size:11px}
+    .sr-an{display:flex;gap:10px;flex-wrap:wrap}
+    .sr-an-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;min-width:135px;flex:1}
+    .sr-an-name{font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .sr-an-val{font-size:13px;margin-top:5px}
+  </style>
+  <div class="tab-panel" id="tab-shorts">
+
+  <!-- MORNING REPORT -->
+  <div class="section">
+    <div class="section-title">
+      <span class="accent" style="background:var(--red);"></span>
+      Morning Report — YouTube Shorts
+      <span class="right" id="shortsDate">—</span>
+    </div>
+    <div class="sr-toolbar">
+      <span class="sr-status" id="shortsStatus">—</span>
+      <button class="sr-btn" onclick="loadShorts(true)">↻ Refresh</button>
+      <button class="sr-btn ghost" onclick="setTrelloToken()" title="Paste Trello token — stored only in this browser">🔑 Trello</button>
+    </div>
+    <div class="sr-rows" id="shortsRows"></div>
+    <p class="note" style="margin-top:8px;">Edit a title or tap an alt to swap, then <b>Save to Trello</b> — it writes the <code>TITLE:</code> line on the card, and the scheduler posts exactly what you approve. Slots are PDT.</p>
+  </div>
+
+  <!-- SHORTS ANALYTICS -->
+  <div class="section">
+    <div class="section-title">
+      <span class="accent" style="background:var(--blue);"></span>
+      Shorts Analytics
+      <span class="right">views · link — no YouTube needed</span>
+    </div>
+    <div class="sr-an" id="shortsAnalytics"></div>
+    <p class="note" style="margin-top:8px;">Populates once Shorts go live and their <code>youtu.be</code> link is written back to the card. View counts light up after YouTube OAuth is connected.</p>
+  </div>
+
+  </div><!-- /tab-shorts -->
 
   <!-- COLLAPSIBLE: OPERATING MANUAL (always visible, below all tabs) -->
 </div>
@@ -1850,14 +1907,117 @@ function escapeHtml(s){
 }
 
 // ── TAB SWITCHING ──
+// ════════ YOUTUBE SHORTS — MORNING REPORT ════════
+const TRELLO_KEY='9469f0b30fc08b824cfe6a99b795409e';
+const TRELLO_BOARD='69ef4125e100f5ef226e2311';
+const TTOK_LS='trello_token';
+const SR_SLOTS=['9:00','11:00','12:00','1:30','6:00','8:00'];   // PDT daypart slots
+function srEsc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function trelloTok(){return (localStorage.getItem(TTOK_LS)||'').trim();}
+function setTrelloToken(){
+  const v=window.prompt('Paste your Trello API token (stored only in this browser, never in the page source).', trelloTok());
+  if(v!==null){ localStorage.setItem(TTOK_LS, v.trim()); loadShorts(true); }
+}
+// Fallback title sets for clips already analyzed (keyed by Trello card shortLink).
+// Once a TITLE:/ALT: block exists on the card, that wins over this bank.
+const SR_BANK={
+  'j4N80VFO':{t:"he said WHAT about her driving 😳",a:["'it's such a female thing to do' 💀","POV: crossing the street with your most unhinged friend","the most unhinged car convo we've had 🚗"]},
+  'MWtkw6NU':{t:"'it's a butterfly' 🦋 (it was NOT a butterfly)",a:["we found a RAT and the server's cover-up was insane","telling my friend there's a rat mid-meal 💀","the staff called it a 'butterfly' 😭"]},
+  'IFEt5fD5':{t:"bro gave me the code to the WRONG house 😭",a:["'that is some old head eating dinner' 💀","POV: you might be breaking into a stranger's house","we almost walked into the wrong crib"]},
+  'ODY1Gvz9':{t:"I got us a car faster than the Ferrari 👀",a:["guess the car before the reveal… it's red 🏎️","the most aesthetic car I've ever bought","faster than the Ferrari, faster than the Huracán 😮‍💨"]},
+  'pZlWqv6d':{t:"the worst parking lot infrastructure I've ever seen",a:["'it serves ONE purpose' 😤","POV: your friend losing it over a parking lot","the parking lot rant we all needed"]},
+  'xZ6qGMRd':{t:"why I never stress about getting pulled over",a:["'it's just content, I'll get a couple million views'","the mindset that keeps my cortisol low 🧘","most cop-infested part of downtown & I'm calm"]}
+};
+function srListName(d){
+  const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  d=d||new Date(); return `Posting — ${m[d.getMonth()]} ${d.getDate()}`;
+}
+function srShortLink(url){const m=(url||'').match(/\/c\/([A-Za-z0-9]+)/);return m?m[1]:'';}
+function srParse(desc,sl){
+  desc=desc||'';
+  const tm=desc.match(/^TITLE:\s*(.+)$/mi);
+  const alts=[...desc.matchAll(/^ALT:\s*(.+)$/gmi)].map(x=>x[1].trim());
+  const bank=SR_BANK[sl];
+  if(tm) return {title:tm[1].trim(), alts:alts.length?alts:(bank?bank.a:[])};
+  if(bank) return {title:bank.t, alts:bank.a};
+  return {title:'', alts:[]};
+}
+async function tGet(path,params){
+  const q=new URLSearchParams(Object.assign({key:TRELLO_KEY,token:trelloTok()},params||{}));
+  const r=await fetch('https://api.trello.com/1'+path+'?'+q,{cache:'no-store'});
+  if(!r.ok) throw new Error('Trello '+r.status);
+  return r.json();
+}
+async function loadShorts(force){
+  const status=document.getElementById('shortsStatus');
+  const name=srListName();
+  document.getElementById('shortsDate').textContent=name;
+  if(!trelloTok()){ status.textContent='Tap 🔑 Trello and paste your token to load →'; document.getElementById('shortsRows').innerHTML=''; return; }
+  status.textContent='Loading…';
+  try{
+    const lists=await tGet('/boards/'+TRELLO_BOARD+'/lists',{fields:'name'});
+    const list=lists.find(l=>l.name.trim()===name);
+    if(!list){ status.textContent='No list "'+name+'" found for today.'; document.getElementById('shortsRows').innerHTML=''; document.getElementById('shortsAnalytics').innerHTML=''; return; }
+    const cards=await tGet('/lists/'+list.id+'/cards',{fields:'name,desc,shortUrl,shortLink'});
+    const clips=cards.filter(c=>/Timestamp|TRANSCRIPT/i.test(c.desc||''));   // skip promo cards
+    srRender(clips);
+    status.textContent=clips.length+' clips queued';
+  }catch(e){ status.textContent='Error: '+e.message+' — re-check token via 🔑 Trello'; }
+}
+function srRender(cards){
+  const wrap=document.getElementById('shortsRows'); wrap.innerHTML='';
+  const an=document.getElementById('shortsAnalytics'); an.innerHTML='';
+  if(!cards.length){ wrap.innerHTML='<p class="note">No clips in today\'s posting list.</p>'; return; }
+  cards.forEach((c,i)=>{
+    const sl=c.shortLink||srShortLink(c.shortUrl);
+    const p=srParse(c.desc,sl);
+    const alts=p.alts.length?p.alts.map(a=>'<span class="sr-alt" onclick="srPick(\''+c.id+'\',this)">'+srEsc(a)+'</span>').join('')
+                            :'<span class="sr-alt" style="opacity:.5;cursor:default">no alts yet</span>';
+    const row=document.createElement('div'); row.className='sr-row';
+    row.innerHTML=
+      '<div class="sr-row-h"><span class="sr-slot">'+(SR_SLOTS[i]||'—')+' PDT</span>'+
+        '<span class="sr-clip"><a href="'+c.shortUrl+'" target="_blank">'+srEsc(c.name)+'</a></span></div>'+
+      '<input class="sr-title-in" id="t_'+c.id+'" value="'+srEsc(p.title)+'" placeholder="title…" />'+
+      '<div class="sr-alts">'+alts+'</div>'+
+      '<div class="sr-row-f"><button class="sr-save" onclick="srSave(\''+c.id+'\')">Save to Trello</button>'+
+        '<span class="sr-saved" id="s_'+c.id+'"></span></div>';
+    wrap.appendChild(row);
+    // analytics card
+    const yt=(c.desc||'').match(/youtu\.be\/([\w-]+)|youtube\.com\/shorts\/([\w-]+)/);
+    const ac=document.createElement('div'); ac.className='sr-an-card';
+    if(yt){ const id=yt[1]||yt[2];
+      ac.innerHTML='<div class="sr-an-name">'+srEsc(c.name)+'</div><div class="sr-an-val"><a href="https://youtu.be/'+id+'" target="_blank" style="color:var(--blue);text-decoration:none">▶ open</a> · <span id="v_'+id+'" style="color:var(--text2)">views pending</span></div>';
+    }else{
+      ac.innerHTML='<div class="sr-an-name">'+srEsc(c.name)+'</div><div class="sr-an-val" style="color:var(--text3)">not posted yet</div>';
+    }
+    an.appendChild(ac);
+  });
+}
+function srPick(cardId,el){ document.getElementById('t_'+cardId).value=el.textContent; }
+async function srSave(cardId){
+  const inp=document.getElementById('t_'+cardId), stat=document.getElementById('s_'+cardId);
+  const title=inp.value.trim();
+  stat.textContent='saving…'; stat.style.color='var(--text2)';
+  try{
+    const card=await tGet('/cards/'+cardId,{fields:'desc'});
+    let desc=(card.desc||'').replace(/^TITLE:.*$\n?/mi,'');   // drop old TITLE, keep clip report
+    desc='TITLE: '+title+'\n'+desc;
+    const q=new URLSearchParams({key:TRELLO_KEY,token:trelloTok(),desc:desc});
+    const r=await fetch('https://api.trello.com/1/cards/'+cardId+'?'+q,{method:'PUT'});
+    if(!r.ok) throw new Error('Trello '+r.status);
+    stat.textContent='✓ saved'; stat.style.color='var(--green)';
+  }catch(e){ stat.textContent='✗ '+e.message; stat.style.color='var(--red)'; }
+}
+
 function switchTab(name){
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
   localStorage.setItem('zain_current_tab', name);
+  if(name==='shorts') loadShorts();
 }
 (function restoreTab(){
   const t = localStorage.getItem('zain_current_tab') || 'today';
-  if(['today','analytics','team'].indexOf(t) >= 0) switchTab(t);
+  if(['today','analytics','team','shorts'].indexOf(t) >= 0) switchTab(t);
 })();
 
 // ── INIT ──
