@@ -376,6 +376,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics')">Analytics</button>
     <button class="tab-btn" data-tab="team" onclick="switchTab('team')">Team</button>
     <button class="tab-btn" data-tab="shorts" onclick="switchTab('shorts')">Shorts</button>
+    <button class="tab-btn" data-tab="tracker" onclick="switchTab('tracker')">Tracker</button>
   </div>
 
   <!-- ─── TAB: TODAY ─── -->
@@ -608,6 +609,19 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   </div>
 
   </div><!-- /tab-shorts -->
+
+  <!-- ─── TAB: TRACKER (live editor KPIs — embeds index.html) ─── -->
+  <div class="tab-panel" id="tab-tracker">
+  <div class="section" style="padding:0;overflow:hidden;">
+    <div class="section-title" style="padding:14px 16px 0;">
+      <span class="accent" style="background:var(--blue);"></span>
+      Editor Tracker — live KPIs
+      <a class="right" href="index.html" target="_blank" style="text-decoration:none;color:var(--blue);font-size:11px;font-weight:700;">↗ open full</a>
+    </div>
+    <iframe id="trackerFrame" title="Editor Dashboard — live KPIs" loading="lazy"
+      style="width:100%;height:82vh;border:0;border-radius:10px;margin-top:10px;background:#0a0a0a;display:block;"></iframe>
+  </div>
+  </div><!-- /tab-tracker -->
 
   <!-- COLLAPSIBLE: OPERATING MANUAL (always visible, below all tabs) -->
 </div>
@@ -2014,10 +2028,15 @@ function switchTab(name){
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
   localStorage.setItem('zain_current_tab', name);
   if(name==='shorts') loadShorts();
+  if(name==='tracker') loadTracker();
+}
+function loadTracker(){
+  const f = document.getElementById('trackerFrame');
+  if(f && !f.src) f.src = 'index.html';   // lazy: only fetch the heavy dashboard on first open
 }
 (function restoreTab(){
   const t = localStorage.getItem('zain_current_tab') || 'today';
-  if(['today','analytics','team','shorts'].indexOf(t) >= 0) switchTab(t);
+  if(['today','analytics','team','shorts','tracker'].indexOf(t) >= 0) switchTab(t);
 })();
 
 // ── INIT ──
