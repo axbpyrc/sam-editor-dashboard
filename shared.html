@@ -610,17 +610,49 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
   </div><!-- /tab-shorts -->
 
-  <!-- ─── TAB: TRACKER (live editor KPIs — embeds index.html) ─── -->
+  <!-- ─── TAB: TRACKER (live editor KPIs — native render from tracker.json) ─── -->
+  <style>
+    .trk-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+    .trk-updated{font-size:11px;color:var(--text3);margin-right:auto}
+    .trk-btn{background:var(--surface3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px 11px;font-size:11px;cursor:pointer;text-decoration:none}
+    .trk-btn:hover{border-color:var(--blue)}
+    .trk-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+    .trk-kpi{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:13px 14px}
+    .trk-kpi .kl{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--text3)}
+    .trk-kpi .kv{font-size:26px;font-weight:850;margin-top:6px;line-height:1}
+    .trk-kpi .kd{font-size:11px;margin-top:5px;color:var(--text2)}
+    .trk-bars{display:flex;align-items:flex-end;gap:8px;height:120px;padding:6px 2px 0}
+    .trk-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%}
+    .trk-bar-wrap{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center}
+    .trk-bar{width:62%;min-height:2px;border-radius:4px 4px 0 0}
+    .trk-cnt{font-size:13px;font-weight:800}
+    .trk-dl{font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.3px}
+    .trk-dd{font-size:9px;color:var(--text3)}
+    .trk-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    table.trk{width:100%;border-collapse:collapse}
+    table.trk th{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);font-weight:800}
+    table.trk th:nth-child(1),table.trk th:nth-child(2){text-align:left}
+    table.trk td{font-size:13px;padding:8px;border-bottom:1px solid rgba(255,255,255,.04);text-align:right}
+    table.trk td.nm{text-align:left;font-weight:700}
+    table.trk td.rk{text-align:left;color:var(--text3);font-weight:800;width:26px}
+    .trk-day{width:26px;height:26px;border-radius:6px;display:inline-block;text-align:center;line-height:26px;font-size:11px;font-weight:800;color:#fff}
+    .pace-on{color:var(--green);font-weight:800;font-size:11px}
+    .pace-below{color:var(--orange);font-weight:800;font-size:11px}
+    .trk-rw{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:13px;margin-bottom:10px}
+    .trk-rw-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+    .trk-rw-bar{height:10px;background:var(--surface3);border-radius:5px;overflow:hidden}
+    .trk-rw-fill{height:100%;border-radius:5px}
+    .trk-q{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+    .trk-q a{color:var(--text);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .trk-q a:hover{color:var(--blue)}
+    .trk-badge{font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;white-space:nowrap}
+    .trk-spark{display:inline-flex;align-items:flex-end;gap:2px;height:26px;vertical-align:middle}
+    .trk-spark i{width:7px;border-radius:2px 2px 0 0;background:var(--blue);display:inline-block}
+    .trk-err{padding:30px;text-align:center;color:var(--text3);font-size:13px}
+    @media(max-width:760px){.trk-kpis{grid-template-columns:repeat(2,1fr)}.trk-grid2{grid-template-columns:1fr}}
+  </style>
   <div class="tab-panel" id="tab-tracker">
-  <div class="section" style="padding:0;overflow:hidden;">
-    <div class="section-title" style="padding:14px 16px 0;">
-      <span class="accent" style="background:var(--blue);"></span>
-      Editor Tracker — live KPIs
-      <a class="right" href="index.html" target="_blank" style="text-decoration:none;color:var(--blue);font-size:11px;font-weight:700;">↗ open full</a>
-    </div>
-    <iframe id="trackerFrame" title="Editor Dashboard — live KPIs" loading="lazy"
-      style="width:100%;height:82vh;border:0;border-radius:10px;margin-top:10px;background:#0a0a0a;display:block;"></iframe>
-  </div>
+    <div id="trackerBody"><div class="trk-err">Loading live KPIs…</div></div>
   </div><!-- /tab-tracker -->
 
   <!-- COLLAPSIBLE: OPERATING MANUAL (always visible, below all tabs) -->
@@ -2030,13 +2062,118 @@ function switchTab(name){
   if(name==='shorts') loadShorts();
   if(name==='tracker') loadTracker();
 }
-function loadTracker(){
-  const f = document.getElementById('trackerFrame');
-  if(f && !f.src) f.src = 'index.html';   // lazy: only fetch the heavy dashboard on first open
+let _trkLoaded=false;
+function loadTracker(force){
+  if(_trkLoaded && !force) return;
+  const body=document.getElementById('trackerBody'); if(!body) return;
+  if(force) body.innerHTML='<div class="trk-err">Refreshing…</div>';
+  fetch('tracker.json?t='+Date.now()).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(d=>{ _trkLoaded=true; renderTracker(d,body); })
+    .catch(e=>{ body.innerHTML='<div class="trk-err">Couldn\'t load tracker.json ('+e.message+'). '
+      +'<a href="index.html" target="_blank" style="color:var(--blue)">Open the full dashboard ↗</a></div>'; });
+}
+function _trkDayBg(n){ return n>=4?'#16a34a':n>=3?'#22c55e':n>=2?'#1a3a2a':n>=1?'#243024':'#181820'; }
+function renderTracker(d,body){
+  const t=d.team||{}, rw=d.runway||{}, qc=d.qc||{}, medals=['🥇','🥈','🥉','4','5'];
+  const pctLast=(t.pctLast>=0?'+':'')+t.pctLast+'%';
+  const pctLastCol=t.pctLast>=0?'var(--green)':'var(--red)';
+  const tgtCol=t.pctTarget>=80?'var(--green)':t.pctTarget>=50?'var(--orange)':'var(--red)';
+  const daily=d.daily||[]; const dmax=Math.max(1,...daily.map(x=>x.count));
+  const bars=daily.map(x=>{
+    const h=x.future?0:Math.max(4,Math.round(x.count/dmax*100));
+    const col=x.isToday?'var(--blue)':x.count>=5?'#16a34a':x.count>=3?'#22c55e':x.count>=1?'#4ade80':'#b45309';
+    return `<div class="trk-col" style="${x.future?'opacity:.3':''}">
+      <div class="trk-bar-wrap"><div class="trk-bar" style="height:${h}%;background:${col}"></div></div>
+      <div class="trk-cnt" style="color:${x.isToday?'var(--blue)':'var(--text)'}">${x.future?'':x.count}</div>
+      <div class="trk-dl">${x.label}</div><div class="trk-dd">${x.date}</div></div>`;
+  }).join('');
+  const lb=(d.leaderboard||[]).map((e,i)=>{
+    const cells=(e.daily||[]).map((n,j)=>{
+      const fut=daily[j]&&daily[j].future;
+      return `<td style="text-align:center"><span class="trk-day" style="background:${_trkDayBg(n)};${fut?'opacity:.3':''}">${fut?'':(n||'')}</span></td>`;
+    }).join('');
+    return `<tr><td class="rk">${medals[i]||(i+1)}</td><td class="nm">${e.editor}</td>${cells}
+      <td style="font-weight:800">${e.week}</td><td>${e.approved}</td><td>${e.avgRev}</td>
+      <td class="pace-${e.pace}">${e.pace==='on'?'ON PACE':'BELOW'}</td></tr>`;
+  }).join('');
+  const dayHdr=daily.map(x=>`<th style="text-align:center">${x.label.slice(0,1)}</th>`).join('');
+  function rwBar(label,days,col){
+    const pct=Math.min(100,days/30*100);
+    const sc=days>=14?'var(--green)':days>=7?'var(--orange)':'var(--red)';
+    const st=days>=14?'HEALTHY':days>=7?'LOW':'CRITICAL';
+    return `<div class="trk-rw"><div class="trk-rw-h"><b style="font-size:13px">${label}</b>
+      <span><b style="font-size:20px;color:${col}">${days}d</b> <span style="color:${sc};font-size:10px;font-weight:800">${st}</span></span></div>
+      <div class="trk-rw-bar"><div class="trk-rw-fill" style="width:${pct}%;background:${col}"></div></div></div>`;
+  }
+  const qrows=(qc.queue||[]).length?(qc.queue||[]).map(q=>{
+    const c=q.label==='URGENT'?'var(--red)':q.label==='WAITING'?'var(--orange)':'var(--green)';
+    return `<div class="trk-q"><a href="${q.url}" target="_blank">${q.name}</a>
+      <span style="color:var(--text3)">${(q.editors||[]).join(', ')||'—'}</span>
+      <span style="color:var(--text2)">${Math.floor(q.waitH)}h</span>
+      <span class="trk-badge" style="background:${c}22;color:${c}">${q.label}</span></div>`;
+  }).join(''):'<div class="trk-err" style="padding:18px">Queue is clear ✓</div>';
+  const rc=(d.reportCard||[]).map((e,i)=>{
+    const fc=e.fpRate>=70?'var(--green)':e.fpRate>=50?'var(--orange)':'var(--red)';
+    const qsc=e.qscore>=70?'var(--green)':e.qscore>=50?'var(--orange)':'var(--red)';
+    return `<tr><td class="rk">${medals[i]||(i+1)}</td><td class="nm">${e.editor}</td>
+      <td>${e.submitted}</td><td style="color:${fc};font-weight:700">${e.fpRate}%</td>
+      <td>${e.avgRev}</td><td style="color:var(--orange)">${e.stuck||0}</td>
+      <td style="color:${qsc};font-weight:800;font-size:15px">${e.qscore}</td></tr>`;
+  }).join('');
+  const tr=d.trends||{}; const tw=tr.weeks||[];
+  function spark(vals){ const mx=Math.max(1,...vals);
+    return '<span class="trk-spark">'+vals.map(v=>`<i style="height:${Math.max(4,Math.round(v/mx*100))}%;background:${v===mx?'var(--green)':'var(--blue)'}"></i>`).join('')+'</span>'; }
+  const pe=tr.perEditor||{};
+  let trendRows=Object.keys(pe).map(ed=>`<tr><td class="nm">${ed}</td>${pe[ed].map(x=>`<td>${x}</td>`).join('')}<td style="text-align:right">${spark(pe[ed])}</td></tr>`).join('');
+  if(tr.team) trendRows+=`<tr style="border-top:2px solid var(--border)"><td class="nm" style="color:var(--text2)">TEAM</td>${tr.team.map(x=>`<td style="font-weight:800">${x}</td>`).join('')}<td style="text-align:right">${spark(tr.team)}</td></tr>`;
+  const trendHdr=tw.map(w=>`<th>${w}</th>`).join('');
+
+  body.innerHTML=`
+  <div class="trk-head">
+    <span class="trk-updated">● Live · updated ${d.generatedAt||''}</span>
+    <button class="trk-btn" onclick="loadTracker(true)">↻ Refresh</button>
+    <a class="trk-btn" href="index.html" target="_blank">↗ Open full dashboard</a>
+  </div>
+  <div class="trk-kpis">
+    <div class="trk-kpi"><div class="kl">Team Output / wk</div><div class="kv" style="color:var(--green)">${t.weekTotal}</div><div class="kd" style="color:${pctLastCol}">${pctLast} vs last week</div></div>
+    <div class="trk-kpi"><div class="kl">vs Weekly Target</div><div class="kv" style="color:${tgtCol}">${t.pctTarget}%</div><div class="kd">proj ${t.projWeek} / ${t.target}</div></div>
+    <div class="trk-kpi"><div class="kl">Editors On Pace</div><div class="kv">${t.onPace}/${t.editorCount}</div><div class="kd">2+ clips / active day</div></div>
+    <div class="trk-kpi"><div class="kl">QC Queue</div><div class="kv" style="color:var(--purple)">${qc.count}</div><div class="kd">${qc.sahanAvg}/day avg</div></div>
+    <div class="trk-kpi"><div class="kl">Approved Runway</div><div class="kv" style="color:var(--orange)">${rw.total}d</div><div class="kd">ART ${rw.art}d · SAM ${rw.sam}d</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="accent" style="background:var(--blue)"></span>This Week — Team Delivery <span class="right">${t.monthTotal} approved this month</span></div>
+    <div class="trk-bars">${bars}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="accent" style="background:var(--green)"></span>Editor Leaderboard — this week</div>
+    <table class="trk"><thead><tr><th></th><th>Editor</th>${dayHdr}<th>Wk</th><th>Appr</th><th>Rev</th><th>Pace</th></tr></thead><tbody>${lb}</tbody></table>
+  </div>
+
+  <div class="trk-grid2">
+    <div class="section"><div class="section-title"><span class="accent" style="background:var(--orange)"></span>Approved Runway</div>
+      ${rwBar('Sam (Main)',rw.sam,'var(--green)')}${rwBar('Articulate',rw.art,'var(--purple)')}
+      <p class="note" style="font-size:10px;color:var(--text3)">Sam ${rw.samApproved} approved @ ${rw.samRate}/day · Art ${rw.artApproved} @ ${rw.artRate}/day</p></div>
+    <div class="section"><div class="section-title"><span class="accent" style="background:var(--red)"></span>QC Queue <span class="right">${qc.count} waiting</span></div>${qrows}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="accent" style="background:var(--teal)"></span>Report Card — quality</div>
+    <table class="trk"><thead><tr><th></th><th>Editor</th><th>Subs</th><th>1st-pass</th><th>Avg rev</th><th>Stuck</th><th>Score</th></tr></thead><tbody>${rc}</tbody></table>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="accent" style="background:var(--purple)"></span>4-Week Trend</div>
+    <table class="trk"><thead><tr><th>Editor</th>${trendHdr}<th style="text-align:right">Trend</th></tr></thead><tbody>${trendRows}</tbody></table>
+  </div>`;
 }
 (function restoreTab(){
-  const t = localStorage.getItem('zain_current_tab') || 'today';
-  if(['today','analytics','team','shorts','tracker'].indexOf(t) >= 0) switchTab(t);
+  const valid=['today','analytics','team','shorts','tracker'];
+  const h=(location.hash||'').replace('#','');
+  const t = valid.indexOf(h)>=0 ? h : (localStorage.getItem('zain_current_tab')||'today');
+  if(valid.indexOf(t) >= 0) switchTab(t);
 })();
 
 // ── INIT ──
