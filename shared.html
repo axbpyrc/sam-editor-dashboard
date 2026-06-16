@@ -1719,6 +1719,36 @@ function bumpWeekly(key, delta){
 
 const BASED_CONTRACT_START = '2026-06-01';
 
+// Reads from the same JSONBlob the editor-dashboard BASED tab uses (day-level grid).
+// Counts are computed from that grid — single source of truth across both views.
+const BASED_BLOB_URL = 'https://jsonblob.com/api/jsonBlob/019ed1c5-1c37-7228-8cfe-7b3c0d1f0b5c';
+let _basedGrid = {};   // {"YYYY-MM-DD:carousel": timestamp, ...}
+const BASED_KEY_MAP = {  // shared.html key → editor-dashboard category
+  based_shortform:  'short',
+  based_vlogs:      'vlog',
+  based_carousels:  'carousel',
+  based_stories:    'story',
+  // based_shootdays has no per-day source — falls back to local state
+};
+async function basedSyncDown(){
+  try{
+    const r = await fetch(BASED_BLOB_URL + '?_t=' + Date.now(), {cache:'no-store'});
+    if(!r.ok) throw new Error('http '+r.status);
+    const j = await r.json();
+    _basedGrid = (j && j.based) ? j.based : {};
+    renderBasedTracker();
+  }catch(e){ /* network blip — keep previous render */ }
+}
+function basedCountFor(cat, monthIso){
+  let n = 0;
+  const prefix = monthIso.slice(0,7); // "2026-06"
+  for(const k of Object.keys(_basedGrid)){
+    if(!_basedGrid[k]) continue;
+    if(k.startsWith(prefix) && k.endsWith(':'+cat)) n++;
+  }
+  return n;
+}
+
 function renderBasedTracker(){
   const grid = document.getElementById('basedGrid');
   const label = document.getElementById('basedMonthLabel');
@@ -1730,20 +1760,27 @@ function renderBasedTracker(){
   if(label){
     const d = new Date(ms+'T12:00:00');
     label.textContent = contractLive
-      ? d.toLocaleDateString('en-US',{month:'long',year:'numeric'})
+      ? d.toLocaleDateString('en-US',{month:'long',year:'numeric'}) + ' · live-synced with BASED tab'
       : 'Starts June 1';
   }
 
-  // Pre-launch banner
   const banner = !contractLive ? `
     <div style="grid-column:1/-1;background:rgba(234,179,8,.10);border:1px dashed var(--yellow);border-radius:7px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--yellow);font-weight:700;">
       ⏳ Contract begins June 1 — counters preview only (won't reset until June 1 hits)
     </div>` : '';
 
   const tiles = BASED_MONTHLY_DEFS.map(k => {
-    const n = state.basedMonthly[k.key] || 0;
+    const cat = BASED_KEY_MAP[k.key];
+    const n = cat ? basedCountFor(cat, ms) : (state.basedMonthly[k.key] || 0);
     const pct = Math.min(100, Math.round((n / k.target) * 100));
     const dimStyle = contractLive ? '' : 'opacity:.55;';
+    // Read-only tiles for fields backed by BASED blob; +/- buttons only for unbacked (shootdays)
+    const buttons = cat
+      ? `<div class="based-tile-btns"><a href="https://axbpyrc.github.io/sam-editor-dashboard/#based" target="_blank" rel="noopener" style="grid-column:1/-1;background:var(--surface3);border:1px solid var(--border);color:var(--text2);font-weight:700;flex:1;padding:3px 0;border-radius:4px;cursor:pointer;font-size:11px;text-align:center;text-decoration:none;">edit in BASED tab →</a></div>`
+      : `<div class="based-tile-btns">
+           <button onclick="bumpBased('${k.key}',-1)" ${contractLive?'':'disabled'}>−</button>
+           <button onclick="bumpBased('${k.key}',1)"  ${contractLive?'':'disabled'}>+1</button>
+         </div>`;
     return `
       <div class="based-tile" style="${dimStyle}">
         <div class="based-tile-label">${k.label}</div>
@@ -1753,19 +1790,21 @@ function renderBasedTracker(){
           <span class="based-tile-tgt">${k.target}</span>
         </div>
         <div class="based-tile-bar"><div class="based-tile-bar-fill" style="width:${pct}%;"></div></div>
-        <div class="based-tile-btns">
-          <button onclick="bumpBased('${k.key}',-1)" ${contractLive?'':'disabled'}>−</button>
-          <button onclick="bumpBased('${k.key}',1)" ${contractLive?'':'disabled'}>+1</button>
-        </div>
+        ${buttons}
       </div>`;
   }).join('');
   grid.innerHTML = banner + tiles;
 }
 function bumpBased(key, delta){
+  // Only unbacked counters (e.g. shootdays) use this; backed ones link to BASED tab
   state.basedMonthly[key] = Math.max(0, (state.basedMonthly[key] || 0) + delta);
   scheduleSave();
   renderBasedTracker();
 }
+// Initial pull + 30s refresh while visible
+basedSyncDown();
+setInterval(() => { if(!document.hidden) basedSyncDown(); }, 30000);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) basedSyncDown(); });
 
 // ── VIEW GROWTH ──
 function parseNum(s){
