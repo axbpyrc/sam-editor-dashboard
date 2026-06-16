@@ -842,22 +842,19 @@ function setSyncMode(m){
   const el = document.getElementById('syncBadge');
   if(!el) return;
   el.style.cursor = 'pointer';
-  el.onclick = () => promptForPat();
+  el.onclick = () => { syncDown(); };  // click to force-refresh
   if(m === 'online'){
     el.textContent = '● Live';
     el.style.color = 'var(--green)';
-    el.title = 'Synced via GitHub Gist. Click to update PAT.';
-  } else if(m === 'readonly'){
-    el.textContent = '● Read-only — click to enable writes';
-    el.style.color = 'var(--yellow, #facc15)';
-    el.title = 'Add a GitHub PAT to push edits. Reads still work.';
+    el.title = 'Auto-syncing with Sam/Zain. Click to force-refresh now.';
   } else if(m === 'offline'){
-    el.textContent = '● Offline';
+    el.textContent = '● Offline — retrying…';
     el.style.color = 'var(--red)';
-    el.title = 'Sync failed. Check network, then click to update PAT.';
+    el.title = 'Network or server unreachable. Edits stay local until reconnect. Click to retry.';
   } else {
-    el.textContent = '● —';
+    el.textContent = '● Connecting…';
     el.style.color = 'var(--text3)';
+    el.title = 'Establishing first sync.';
   }
 }
 
@@ -1067,11 +1064,11 @@ async function bootstrap(){
   if(!suppressNextSyncUp) syncUp();
 
   // 5. Background sync + time-tick loops
-  // 10s with PAT (auth = 5000/hr limit), 60s without (unauth = 60/hr per IP)
+  // Poll every 15s while tab is visible
   setInterval(() => {
     if(document.hidden) return;
     syncDown();
-  }, ghPat() ? 10000 : 60000);
+  }, 15000);
   setInterval(periodicTimeCheck, 60000);
   document.addEventListener('visibilitychange', () => {
     if(!document.hidden){ syncDown(); periodicTimeCheck(); }
