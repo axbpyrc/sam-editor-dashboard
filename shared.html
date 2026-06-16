@@ -759,17 +759,15 @@ function fmtDate(s){
 }
 
 // ─────────────────────────────────────────────────────────
-// PERSISTENCE — localStorage + GitHub Gist (sync backend for GitHub Pages)
-// Gist: https://gist.github.com/32856790235467980256/8e11aed9bf2aa1bdea751246d5d76150
-// Reads + Writes: both require the shared bot PAT (same token for Zain and Sam).
+// PERSISTENCE — localStorage + JSONBlob (no auth, no token, no setup)
+// Same blob used by Sam and Zain. URL embedded in the page — works out of the box.
 // ─────────────────────────────────────────────────────────
 const STATE_LS = 'shared_state_v2';
-const GIST_ID  = '8e11aed9bf2aa1bdea751246d5d76150';
-const GIST_URL = 'https://api.github.com/gists/' + GIST_ID;
-const PAT_LS   = 'shared_gh_pat';
+const BLOB_URL = 'https://jsonblob.com/api/jsonBlob/019ed1d4-25b2-731f-b39d-37d650ad6294';
 let lastSyncedModified = 0;
-let syncMode = 'init';  // 'init' | 'online' | 'offline' | 'readonly'
+let syncMode = 'init';  // 'init' | 'online' | 'offline'
 let suppressNextSyncUp = false; // skip echo right after pulling
+let _saveInflight = null;        // serialize PUTs so fast edits stay in order
 
 function loadLocal(){
   try{ return JSON.parse(localStorage.getItem(STATE_LS) || 'null'); }
@@ -781,39 +779,16 @@ function saveLocal(){
   catch(e){ console.warn('save failed', e); }
 }
 
-function ghPat(){ return (localStorage.getItem(PAT_LS) || '').trim(); }
-
-function ghHeaders(){
-  const h = {'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28'};
-  const t = ghPat();
-  if(t) h['Authorization'] = 'token ' + t;
-  return h;
-}
-
-function promptForPat(prefix){
-  const cur = ghPat();
-  const msg = (prefix ? prefix + '\n\n' : '') +
-    'Paste the shared bot PAT (same one Sam uses).\n\n' +
-    'Stored in this browser only.';
-  const v = window.prompt(msg, cur);
-  if(v !== null){
-    localStorage.setItem(PAT_LS, v.trim());
-    syncUp();
-  }
-}
-
 async function syncDown(){
   try{
-    const r = await fetch(GIST_URL + '?_t=' + Date.now(), {cache:'no-store', headers: ghHeaders()});
+    const r = await fetch(BLOB_URL + '?_t=' + Date.now(), {cache:'no-store'});
     if(!r.ok) throw new Error('http '+r.status);
-    const g = await r.json();
-    const modified = g.updated_at ? new Date(g.updated_at).getTime() : 0;
-    let record = null;
-    if(g.files && g.files['state.json'] && g.files['state.json'].content){
-      try{ record = JSON.parse(g.files['state.json'].content); }catch(e){}
-    }
-    setSyncMode(ghPat() ? 'online' : 'readonly');
-    if(record && modified && modified > lastSyncedModified){
+    const record = await r.json();
+    // Use server-reported modified time from header if present; else use the record's own "updated"
+    const lm = r.headers.get('x-jsonblob-last-modified');
+    const modified = lm ? parseInt(lm,10)*1000 : (record && record.updated ? Date.parse(record.updated) : Date.now());
+    setSyncMode('online');
+    if(record && modified > lastSyncedModified){
       lastSyncedModified = modified;
       const localState = state;
       suppressNextSyncUp = true;
@@ -835,31 +810,25 @@ async function syncDown(){
 
 async function syncUp(){
   if(suppressNextSyncUp){ suppressNextSyncUp = false; return true; }
-  if(!ghPat()){
-    setSyncMode('readonly');
-    return false;
-  }
-  try{
-    const body = JSON.stringify({files: {'state.json': {content: JSON.stringify(state)}}});
-    const r = await fetch(GIST_URL, {
-      method:'PATCH',
-      headers: {...ghHeaders(), 'Content-Type':'application/json'},
-      body
-    });
-    if(!r.ok){
-      if(r.status === 401 || r.status === 403 || r.status === 404){
-        promptForPat('PAT rejected (' + r.status + '). Try a new token with `gist` scope.');
-      }
-      throw new Error('http '+r.status);
+  const body = JSON.stringify(Object.assign({}, state, {updated: new Date().toISOString()}));
+  // Serialize so a fast sequence of edits applies in order
+  _saveInflight = (_saveInflight || Promise.resolve()).then(async () => {
+    try{
+      const r = await fetch(BLOB_URL, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body
+      });
+      if(!r.ok) throw new Error('http '+r.status);
+      lastSyncedModified = Date.now();
+      setSyncMode('online');
+      return true;
+    }catch(e){
+      setSyncMode('offline');
+      return false;
     }
-    const g = await r.json();
-    if(g.updated_at) lastSyncedModified = new Date(g.updated_at).getTime();
-    setSyncMode('online');
-    return true;
-  }catch(e){
-    setSyncMode('offline');
-    return false;
-  }
+  });
+  return _saveInflight;
 }
 
 function scheduleSave(){
