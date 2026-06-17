@@ -759,15 +759,20 @@ function fmtDate(s){
 }
 
 // ─────────────────────────────────────────────────────────
-// PERSISTENCE — localStorage + JSONBlob (no auth, no token, no setup)
-// Same blob used by Sam and Zain. URL embedded in the page — works out of the box.
+// PERSISTENCE — localStorage + GitHub Gist (same gist as the BASED tab and Sam's chat).
+// Reads anonymous (no PAT). Writes use shared_gh_pat from localStorage.
+// ETag/304 conditional requests keep us under the 60/hr anonymous rate limit.
 // ─────────────────────────────────────────────────────────
-const STATE_LS = 'shared_state_v2';
-const BLOB_URL = 'https://jsonblob.com/api/jsonBlob/019ed1d4-25b2-731f-b39d-37d650ad6294';
+const STATE_LS    = 'shared_state_v2';
+const GIST_ID     = '8e11aed9bf2aa1bdea751246d5d76150';
+const GIST_API    = 'https://api.github.com/gists/' + GIST_ID;
+const GIST_FILE   = 'state.json';
+const PAT_LS      = 'shared_gh_pat';
 let lastSyncedModified = 0;
-let syncMode = 'init';  // 'init' | 'online' | 'offline'
+let syncMode = 'init';  // 'init' | 'online' | 'offline' | 'readonly'
 let suppressNextSyncUp = false; // skip echo right after pulling
-let _saveInflight = null;        // serialize PUTs so fast edits stay in order
+let _saveInflight = null;        // serialize PATCHes so fast edits stay in order
+let _stateEtag = null;          // ETag cache — 304s are free under rate limit
 
 function loadLocal(){
   try{ return JSON.parse(localStorage.getItem(STATE_LS) || 'null'); }
@@ -779,20 +784,40 @@ function saveLocal(){
   catch(e){ console.warn('save failed', e); }
 }
 
+function ghPat(){ try{ return (localStorage.getItem(PAT_LS) || '').trim(); }catch(e){ return ''; } }
+function promptForPat(prefix){
+  const v = window.prompt(
+    (prefix ? prefix + '\n\n' : '') +
+    'Paste the shared bot PAT to enable writes on this dashboard.\n' +
+    '(Same PAT used by index.html BASED tab. Stored in this browser only.)',
+    ghPat()
+  );
+  if(v !== null){
+    try{ localStorage.setItem(PAT_LS, v.trim()); }catch(e){}
+    if(v.trim()) syncUp(); else setSyncMode('readonly');
+  }
+}
+
 async function syncDown(){
   try{
-    const r = await fetch(BLOB_URL + '?_t=' + Date.now(), {cache:'no-store'});
+    const headers = {'Accept':'application/vnd.github+json'};
+    if(_stateEtag) headers['If-None-Match'] = _stateEtag;
+    const r = await fetch(GIST_API, {cache:'no-store', headers});
+    if(r.status === 304){ setSyncMode(ghPat() ? 'online' : 'readonly'); return true; }
+    if(r.status === 403 && r.headers.get('x-ratelimit-remaining') === '0'){
+      setSyncMode('offline'); return false;
+    }
     if(!r.ok) throw new Error('http '+r.status);
-    const record = await r.json();
-    // Use server-reported modified time from header if present; else use the record's own "updated"
-    const lm = r.headers.get('x-jsonblob-last-modified');
-    const modified = lm ? parseInt(lm,10)*1000 : (record && record.updated ? Date.parse(record.updated) : Date.now());
-    setSyncMode('online');
+    _stateEtag = r.headers.get('etag') || _stateEtag;
+    const g = await r.json();
+    let record = null;
+    try{ record = JSON.parse((g.files && g.files[GIST_FILE] && g.files[GIST_FILE].content) || 'null'); }catch(e){}
+    const modified = g.updated_at ? Date.parse(g.updated_at) : Date.now();
+    setSyncMode(ghPat() ? 'online' : 'readonly');
     if(record && modified > lastSyncedModified){
       lastSyncedModified = modified;
       const localState = state;
       suppressNextSyncUp = true;
-      // Only adopt fields that exist in the cloud record (don't wipe local-only state)
       state = { ...localState, ...record };
       migrateDailyIfNeeded();
       migrateWeeklyIfNeeded();
@@ -810,16 +835,28 @@ async function syncDown(){
 
 async function syncUp(){
   if(suppressNextSyncUp){ suppressNextSyncUp = false; return true; }
-  const body = JSON.stringify(Object.assign({}, state, {updated: new Date().toISOString()}));
-  // Serialize so a fast sequence of edits applies in order
+  const pat = ghPat();
+  if(!pat){ setSyncMode('readonly'); return false; }
+  const payload = Object.assign({}, state, {updated: new Date().toISOString()});
+  const body = JSON.stringify({files:{[GIST_FILE]:{content: JSON.stringify(payload, null, 2)}}});
   _saveInflight = (_saveInflight || Promise.resolve()).then(async () => {
     try{
-      const r = await fetch(BLOB_URL, {
-        method:'PUT',
-        headers:{'Content-Type':'application/json'},
+      const r = await fetch(GIST_API, {
+        method:'PATCH',
+        headers:{
+          'Authorization':'token ' + pat,
+          'Accept':'application/vnd.github+json',
+          'Content-Type':'application/json'
+        },
         body
       });
-      if(!r.ok) throw new Error('http '+r.status);
+      if(!r.ok){
+        if(r.status === 401 || r.status === 403 || r.status === 404){
+          promptForPat('PAT rejected (' + r.status + '). Paste a fresh one with `gist` scope.');
+        }
+        throw new Error('http '+r.status);
+      }
+      _stateEtag = null;  // force next syncDown to re-fetch (we know remote changed)
       lastSyncedModified = Date.now();
       setSyncMode('online');
       return true;
@@ -842,19 +879,26 @@ function setSyncMode(m){
   const el = document.getElementById('syncBadge');
   if(!el) return;
   el.style.cursor = 'pointer';
-  el.onclick = () => { syncDown(); };  // click to force-refresh
   if(m === 'online'){
     el.textContent = '● Live';
     el.style.color = 'var(--green)';
     el.title = 'Auto-syncing with Sam/Zain. Click to force-refresh now.';
+    el.onclick = () => { syncDown(); };
+  } else if(m === 'readonly'){
+    el.textContent = '● Read-only — click to enable writes';
+    el.style.color = 'var(--yellow, #facc15)';
+    el.title = 'Add a GitHub PAT to push edits. Reads still work.';
+    el.onclick = () => promptForPat();
   } else if(m === 'offline'){
-    el.textContent = '● Offline — retrying…';
+    el.textContent = '● Offline — click to retry / set PAT';
     el.style.color = 'var(--red)';
-    el.title = 'Network or server unreachable. Edits stay local until reconnect. Click to retry.';
+    el.title = 'Sync failed (network or PAT). Click to retry or update PAT.';
+    el.onclick = () => { syncDown().then(ok => { if(!ok && !ghPat()) promptForPat(); }); };
   } else {
     el.textContent = '● Connecting…';
     el.style.color = 'var(--text3)';
     el.title = 'Establishing first sync.';
+    el.onclick = () => { syncDown(); };
   }
 }
 
@@ -1064,11 +1108,12 @@ async function bootstrap(){
   if(!suppressNextSyncUp) syncUp();
 
   // 5. Background sync + time-tick loops
-  // Poll every 15s while tab is visible
+  // Poll every 90s while tab is visible. With ETag conditional requests,
+  // unchanged responses return 304 and don't count against the 60/hr anon limit.
   setInterval(() => {
     if(document.hidden) return;
     syncDown();
-  }, 15000);
+  }, 90000);
   setInterval(periodicTimeCheck, 60000);
   document.addEventListener('visibilitychange', () => {
     if(!document.hidden){ syncDown(); periodicTimeCheck(); }
@@ -1730,13 +1775,17 @@ const BASED_KEY_MAP = {
   based_carousels:  'carousel',
   based_stories:    'story',
 };
+// ETag cache — 304s don't count against the 60/hr anonymous rate limit
+let _basedEtag = null;
 async function basedSyncDown(){
   try{
-    const r = await fetch(BASED_GIST_API + '?_t=' + Date.now(), {
-      cache:'no-store',
-      headers:{'Accept':'application/vnd.github+json'}
-    });
+    const headers = {'Accept':'application/vnd.github+json'};
+    if(_basedEtag) headers['If-None-Match'] = _basedEtag;
+    const r = await fetch(BASED_GIST_API, {cache:'no-store', headers});
+    if(r.status === 304) return; // unchanged, free under rate limit
+    if(r.status === 403 && r.headers.get('x-ratelimit-remaining') === '0') return; // rate limited, just back off
     if(!r.ok) throw new Error('http '+r.status);
+    _basedEtag = r.headers.get('etag') || _basedEtag;
     const g = await r.json();
     const raw = (g.files && g.files[BASED_GIST_FILE] && g.files[BASED_GIST_FILE].content) || '{}';
     let j = {};
@@ -1809,7 +1858,7 @@ function bumpBased(key, delta){
 }
 // Initial pull + 30s refresh while visible
 basedSyncDown();
-setInterval(() => { if(!document.hidden) basedSyncDown(); }, 30000);
+setInterval(() => { if(!document.hidden) basedSyncDown(); }, 90000);
 document.addEventListener('visibilitychange', () => { if(!document.hidden) basedSyncDown(); });
 
 // ── VIEW GROWTH ──
